@@ -1,4 +1,4 @@
-package com.sunrisedental.dao;
+package com.sunrisedental.util;
 
 import java.io.InputStream;
 import java.sql.Connection;

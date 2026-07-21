@@ -1,7 +1,7 @@
 package com.sunrisedental.dao.impl;
 
 import com.sunrisedental.dao.BillDAO;
-import com.sunrisedental.dao.DBConnection;
+import com.sunrisedental.util.DBConnection;
 import com.sunrisedental.model.Bill;
 
 import java.math.BigDecimal;

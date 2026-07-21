@@ -1,6 +1,6 @@
 package com.sunrisedental.dao.impl;
 
-import com.sunrisedental.dao.DBConnection;
+import com.sunrisedental.util.DBConnection;
 import com.sunrisedental.dao.UserDAO;
 import com.sunrisedental.model.User;
 
