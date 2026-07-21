@@ -1,0 +1,12 @@
+package com.sunrisedental.dao;
+
+import com.sunrisedental.model.Appointment;
+import java.util.List;
+import java.util.Map;
+
+public interface AppointmentDAO {
+    boolean createAppointment(Appointment app);
+    Appointment getAppointmentByNumber(String appointmentNumber);
+    List<Appointment> getAllAppointments();
+    List<Map<String, Object>> getDentistStatistics();
+}
