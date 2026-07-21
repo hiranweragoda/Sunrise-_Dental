@@ -31,7 +31,6 @@ public class BillDAOImpl implements BillDAO {
             cs.execute();
 
             int billId = cs.getInt(3);
-            BigDecimal totalCost = cs.getBigDecimal(4);
 
             if (billId > 0) {
                 return getBillByAppointmentNumber(appointmentNumber);
