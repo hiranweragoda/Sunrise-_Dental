@@ -2,6 +2,7 @@ package com.sunrisedental.controller;
 
 import com.google.gson.Gson;
 import com.sunrisedental.dao.AppointmentDAO;
+import com.sunrisedental.dto.AppointmentRequest;
 import com.sunrisedental.model.Appointment;
 
 import javax.servlet.ServletException;
@@ -122,15 +123,5 @@ public class AppointmentController extends HttpServlet {
             resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             resp.getWriter().write("{\"error\": \"An unexpected error occurred: " + e.getMessage() + "\"}");
         }
-    }
-
-    private static class AppointmentRequest {
-        String patientName;
-        String address;
-        String contactNumber;
-        String dentistName;
-        String treatmentId;
-        String appointmentDate;
-        String appointmentTime;
     }
 }

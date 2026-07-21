@@ -2,6 +2,7 @@ package com.sunrisedental.controller;
 
 import com.google.gson.Gson;
 import com.sunrisedental.dao.UserDAO;
+import com.sunrisedental.dto.LoginRequest;
 import com.sunrisedental.model.User;
 
 import javax.servlet.ServletException;
@@ -77,10 +78,5 @@ public class AuthController extends HttpServlet {
             resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
             resp.getWriter().write("{\"error\": \"Resource not found\"}");
         }
-    }
-
-    private static class LoginRequest {
-        String username;
-        String password;
     }
 }
