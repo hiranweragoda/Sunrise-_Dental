@@ -13,7 +13,7 @@ import javax.servlet.http.HttpSession;
 import java.io.IOException;
 
 @WebServlet("/api/auth/*")
-public class AuthController extends HttpServlet {
+public class AuthServlet extends HttpServlet {
     private final UserDAO userDAO = new com.sunrisedental.dao.impl.UserDAOImpl();
     private final Gson gson = new Gson();
 

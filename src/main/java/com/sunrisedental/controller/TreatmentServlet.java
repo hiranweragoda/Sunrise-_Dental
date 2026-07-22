@@ -13,7 +13,7 @@ import java.io.IOException;
 import java.util.List;
 
 @WebServlet("/api/treatments")
-public class TreatmentController extends HttpServlet {
+public class TreatmentServlet extends HttpServlet {
     private final TreatmentDAO treatmentDAO = new com.sunrisedental.dao.impl.TreatmentDAOImpl();
     private final Gson gson = new Gson();
 

@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.Random;
 
 @WebServlet("/api/appointments/*")
-public class AppointmentController extends HttpServlet {
+public class AppointmentServlet extends HttpServlet {
     private final AppointmentDAO appointmentDAO = new com.sunrisedental.dao.impl.AppointmentDAOImpl();
     private final Gson gson = new Gson();
 

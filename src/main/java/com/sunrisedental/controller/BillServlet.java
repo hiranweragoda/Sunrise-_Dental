@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 @WebServlet("/api/bills/*")
-public class BillController extends HttpServlet {
+public class BillServlet extends HttpServlet {
     private final BillDAO billDAO = new com.sunrisedental.dao.impl.BillDAOImpl();
     private final Gson gson = new Gson();
 

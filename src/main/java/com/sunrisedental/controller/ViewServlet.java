@@ -9,7 +9,7 @@ import javax.servlet.http.HttpSession;
 import java.io.IOException;
 
 @WebServlet(urlPatterns = {"/login", "/dashboard"})
-public class ViewController extends HttpServlet {
+public class ViewServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
