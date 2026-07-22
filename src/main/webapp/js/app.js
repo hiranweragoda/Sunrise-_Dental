@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     checkAuthentication();
     loadTreatments();
     loadDentists();
+    loadPatients();
     setMinDate();
 });
 
@@ -133,8 +134,92 @@ function loadDentists() {
 // Restrict appointment dates to today and the future
 function setMinDate() {
     const dateInput = document.getElementById('appointment_date');
-    const today = new Date().toISOString().split('T')[0];
-    dateInput.min = today;
+    if (dateInput) {
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.min = today;
+    }
+}
+
+// 2c. Load registered patients directory
+let allPatientsCache = [];
+
+function loadPatients() {
+    const tbody = document.getElementById('patients-table-tbody');
+
+    fetch('api/patients')
+        .then(res => res.json())
+        .then(patients => {
+            allPatientsCache = patients;
+
+            if (tbody) {
+                tbody.innerHTML = '';
+                if (patients.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No registered patients found. Please add a patient profile first.</td></tr>';
+                    return;
+                }
+                patients.forEach(p => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${p.id}</td>
+                        <td style="font-weight: 600;">${p.patientName}</td>
+                        <td><span style="font-family: monospace; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">${p.nicPassport}</span></td>
+                        <td>${p.phoneNumber}</td>
+                        <td>${p.address || '-'}</td>
+                        <td style="text-align: right;">
+                            <button type="button" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; margin-right: 6px;" onclick="editPatient(${p.id})">Edit</button>
+                            <button type="button" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; border-color: rgba(239, 68, 68, 0.5); color: #f87171;" onclick="deletePatient(${p.id}, '${p.patientName.replace(/'/g, "\\'")}')">Delete</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        })
+        .catch(err => {
+            console.error("Error loading patients:", err);
+            if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--color-danger);">Error loading patients.</td></tr>';
+        });
+}
+
+// 2d. Autofill patient details by entering NIC or Passport number
+function lookupPatientByNic(showAlertIfNotFound = false) {
+    const inputField = document.getElementById('search_patient_nic');
+    const statusMsg = document.getElementById('patient-lookup-status');
+    const nameField = document.getElementById('patient_name');
+    const phoneField = document.getElementById('contact_number');
+    const addressField = document.getElementById('address');
+
+    if (!inputField) return;
+
+    const query = inputField.value.trim().toLowerCase();
+
+    if (query === '') {
+        if (nameField) nameField.value = '';
+        if (phoneField) phoneField.value = '';
+        if (addressField) addressField.value = '';
+        if (statusMsg) statusMsg.innerHTML = '';
+        return;
+    }
+
+    const patient = allPatientsCache.find(p => p.nicPassport.trim().toLowerCase() === query);
+
+    if (patient) {
+        if (nameField) nameField.value = patient.patientName;
+        if (phoneField) phoneField.value = patient.phoneNumber;
+        if (addressField) addressField.value = patient.address || '';
+        if (statusMsg) {
+            statusMsg.innerHTML = `<span style="color: #4ade80;">✓ Patient Verified: <strong>${patient.patientName}</strong> (${patient.phoneNumber})</span>`;
+        }
+    } else {
+        if (nameField) nameField.value = '';
+        if (phoneField) phoneField.value = '';
+        if (addressField) addressField.value = '';
+        if (statusMsg) {
+            statusMsg.innerHTML = `<span style="color: #f87171;">❌ No registered patient found with NIC/Passport "${inputField.value.trim()}". Please register under Patient Registration first.</span>`;
+        }
+        if (showAlertIfNotFound) {
+            alert(`Patient with NIC/Passport "${inputField.value.trim()}" is not registered!\n\nPlease register the patient under the "Patient Registration" tab first.`);
+        }
+    }
 }
 
 // 3. Tab switching framework
@@ -163,6 +248,8 @@ function switchTab(tabId) {
         loadDentists();
     } else if (tabId === 'tab-treatments') {
         loadTreatments();
+    } else if (tabId === 'tab-patients') {
+        loadPatients();
     }
 }
 
@@ -172,7 +259,14 @@ function submitAppointment(event) {
     const alertBox = document.getElementById('register-alert');
     alertBox.style.display = 'none';
 
+    const nicInput = document.getElementById('search_patient_nic').value.trim();
     const patientName = document.getElementById('patient_name').value.trim();
+
+    if (!patientName) {
+        lookupPatientByNic(true);
+        showAlert('register-alert', 'alert-danger', 'Cannot schedule appointment! The entered NIC/Passport is not registered in the system.');
+        return;
+    }
     const contactNumber = document.getElementById('contact_number').value.trim();
     const address = document.getElementById('address').value.trim();
     const dentistName = document.getElementById('dentist_name').value;
@@ -728,6 +822,83 @@ function deleteTreatment(id, name) {
         .catch(err => {
             console.error(err);
             showAlert('treatment-alert', 'alert-danger', 'Failed to delete treatment package.');
+        });
+    }
+}
+
+// 13. Patient Registration & Profile Management (Staff & Admin)
+function submitPatientForm(event) {
+    event.preventDefault();
+    const alertBox = document.getElementById('patient-alert');
+    alertBox.style.display = 'none';
+
+    const id = document.getElementById('patient-id').value;
+    const name = document.getElementById('patient-name-input').value.trim();
+    const nic = document.getElementById('patient-nic-input').value.trim();
+    const phone = document.getElementById('patient-phone-input').value.trim();
+    const address = document.getElementById('patient-address-input').value.trim();
+
+    fetch('api/patients', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: id, patient_name: name, nic_passport: nic, phone_number: phone, address: address })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.error) {
+            showAlert('patient-alert', 'alert-danger', data.error);
+        } else {
+            showAlert('patient-alert', 'alert-success', data.message);
+            resetPatientForm();
+            loadPatients();
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        showAlert('patient-alert', 'alert-danger', 'An error occurred while saving patient profile.');
+    });
+}
+
+function editPatient(id) {
+    const patient = allPatientsCache.find(p => p.id === id);
+    if (!patient) return;
+
+    document.getElementById('patient-id').value = patient.id;
+    document.getElementById('patient-name-input').value = patient.patientName;
+    document.getElementById('patient-nic-input').value = patient.nicPassport;
+    document.getElementById('patient-phone-input').value = patient.phoneNumber;
+    document.getElementById('patient-address-input').value = patient.address || '';
+    document.getElementById('btn-save-patient').innerText = 'Update Patient Profile';
+
+    document.getElementById('patient-alert').style.display = 'none';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function resetPatientForm() {
+    document.getElementById('patient-form').reset();
+    document.getElementById('patient-id').value = '0';
+    document.getElementById('btn-save-patient').innerText = 'Save Patient Profile';
+}
+
+function deletePatient(id, name) {
+    if (confirm(`Are you sure you want to delete patient record '${name}'?`)) {
+        fetch('api/patients', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete', id: String(id) })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) {
+                showAlert('patient-alert', 'alert-danger', data.error);
+            } else {
+                showAlert('patient-alert', 'alert-success', data.message);
+                loadPatients();
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            showAlert('patient-alert', 'alert-danger', 'Failed to delete patient record.');
         });
     }
 }

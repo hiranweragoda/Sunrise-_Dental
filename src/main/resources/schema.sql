@@ -59,6 +59,16 @@ INSERT INTO dentists (dentist_name, specialization, contact_number) VALUES
 ('Dr. Shalini Fernando', 'Periodontist', '0774445566')
 ON DUPLICATE KEY UPDATE specialization = VALUES(specialization);
 
+-- 4. Patients Table
+CREATE TABLE IF NOT EXISTS patients (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    patient_name VARCHAR(100) NOT NULL,
+    nic_passport VARCHAR(50) UNIQUE NOT NULL,
+    address VARCHAR(255),
+    phone_number VARCHAR(20) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- 3. Appointments Table
 CREATE TABLE appointments (
     appointment_number VARCHAR(50) PRIMARY KEY,

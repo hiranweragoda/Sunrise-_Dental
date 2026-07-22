@@ -48,6 +48,12 @@
                 </svg>
                 <span>New Appointment</span>
             </button>
+            <button class="nav-item" onclick="switchTab('tab-patients')">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <span>Patient Registration</span>
+            </button>
             <button class="nav-item" onclick="switchTab('tab-search')">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -115,19 +121,28 @@
 
                     <form id="register-form" onsubmit="submitAppointment(event)">
                         <div class="form-grid">
+                            <div class="form-group full-width">
+                                <label for="search_patient_nic">Patient NIC / Passport Number <span style="font-weight: normal; font-size: 0.8rem; color: #38bdf8;">(Enter NIC or Passport and click Verify Patient)</span></label>
+                                <div style="display: flex; gap: 10px;">
+                                    <input type="text" id="search_patient_nic" placeholder="e.g. 199512345678 or N1234567" required style="flex: 1;">
+                                    <button type="button" class="btn btn-secondary" onclick="lookupPatientByNic(true)">Verify Patient</button>
+                                </div>
+                                <small id="patient-lookup-status" style="display: block; margin-top: 6px; font-size: 0.85rem; font-weight: 500; min-height: 1.2rem;"></small>
+                            </div>
+
                             <div class="form-group">
                                 <label for="patient_name">Patient Full Name</label>
-                                <input type="text" id="patient_name" placeholder="John Doe" required minlength="3">
+                                <input type="text" id="patient_name" placeholder="Auto-filled from registered patient" required readonly style="background: rgba(0,0,0,0.3); opacity: 0.85;">
                             </div>
 
                             <div class="form-group">
                                 <label for="contact_number">Contact Number</label>
-                                <input type="tel" id="contact_number" placeholder="e.g. 0771234567" required>
+                                <input type="tel" id="contact_number" placeholder="Auto-filled" required readonly style="background: rgba(0,0,0,0.3); opacity: 0.85;">
                             </div>
 
                             <div class="form-group full-width">
                                 <label for="address">Address</label>
-                                <input type="text" id="address" placeholder="123 Galle Road, Colombo 03">
+                                <input type="text" id="address" placeholder="Auto-filled address" readonly style="background: rgba(0,0,0,0.3); opacity: 0.85;">
                             </div>
 
                             <div class="form-group">
@@ -678,6 +693,70 @@
                 </div>
             </section>
 
+            <!-- TAB: PATIENT MANAGEMENT (STAFF & ADMIN) -->
+            <section id="tab-patients" class="tab-content">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title">Patient Profile Registration & Management</h2>
+                        <p class="panel-subtitle">Register new patients with NIC/Passport details, edit records, or remove patient profiles</p>
+                    </div>
+
+                    <div id="patient-alert" class="alert" style="display: none;"></div>
+
+                    <form id="patient-form" onsubmit="submitPatientForm(event)">
+                        <input type="hidden" id="patient-id" value="0">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="patient-name-input">Patient Full Name</label>
+                                <input type="text" id="patient-name-input" placeholder="e.g. Nimal Perera" required minlength="3">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="patient-nic-input">NIC / Passport Number</label>
+                                <input type="text" id="patient-nic-input" placeholder="e.g. 199512345678 or N1234567" required minlength="5">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="patient-phone-input">Contact Phone Number</label>
+                                <input type="tel" id="patient-phone-input" placeholder="e.g. 0771234567" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="patient-address-input">Residential Address</label>
+                                <input type="text" id="patient-address-input" placeholder="e.g. 45 Temple Road, Nugegoda">
+                            </div>
+                        </div>
+
+                        <div class="form-actions" style="margin-top: 1.5rem;">
+                            <button type="button" class="btn btn-secondary" onclick="resetPatientForm()">Clear Form</button>
+                            <button type="submit" id="btn-save-patient" class="btn btn-primary">Save Patient Profile</button>
+                        </div>
+                    </form>
+
+                    <div style="margin-top: 2.5rem;">
+                        <h3 style="margin-bottom: 1rem; color: var(--color-primary);">Registered Clinic Patients Directory</h3>
+                        <div style="overflow-x: auto; background: rgba(0, 0, 0, 0.2); border-radius: 12px; border: 1px solid var(--card-border);">
+                            <table class="report-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Patient Name</th>
+                                        <th>NIC / Passport</th>
+                                        <th>Contact Phone</th>
+                                        <th>Address</th>
+                                        <th style="text-align: right;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="patients-table-tbody">
+                                    <tr>
+                                        <td colspan="6" style="text-align: center; color: var(--text-muted);">Loading registered patients...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </main>
     </div>
 
