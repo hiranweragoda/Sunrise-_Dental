@@ -432,6 +432,11 @@
                                 <label for="user-password">Password <span id="user-password-hint" style="font-weight: normal; font-size: 0.8rem; color: var(--text-muted);">(Required for new users)</span></label>
                                 <input type="password" id="user-password" placeholder="••••••••">
                             </div>
+
+                            <div class="form-group">
+                                <label for="user-confirm-password">Confirm Password</label>
+                                <input type="password" id="user-confirm-password" placeholder="••••••••">
+                            </div>
                         </div>
 
                         <div class="form-actions" style="margin-top: 1.5rem;">

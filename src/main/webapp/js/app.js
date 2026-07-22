@@ -406,6 +406,12 @@ function submitUserForm(event) {
     const fullName = document.getElementById('user-fullname').value.trim();
     const role = document.getElementById('user-role').value;
     const password = document.getElementById('user-password').value;
+    const confirmPassword = document.getElementById('user-confirm-password').value;
+
+    if (password !== confirmPassword) {
+        showAlert('user-alert', 'alert-danger', 'Password and Confirm Password do not match!');
+        return;
+    }
 
     const payload = {
         id: userId,
@@ -445,6 +451,7 @@ function editUser(userId) {
     document.getElementById('user-fullname').value = user.fullName;
     document.getElementById('user-role').value = user.role;
     document.getElementById('user-password').value = '';
+    document.getElementById('user-confirm-password').value = '';
     
     document.getElementById('user-password-hint').innerText = '(Leave blank to keep existing password)';
     document.getElementById('btn-save-user').innerText = 'Update User Account';
@@ -458,6 +465,8 @@ function editUser(userId) {
 function resetUserForm() {
     document.getElementById('user-form').reset();
     document.getElementById('user-id').value = '0';
+    document.getElementById('user-password').value = '';
+    document.getElementById('user-confirm-password').value = '';
     document.getElementById('user-password-hint').innerText = '(Required for new users)';
     document.getElementById('btn-save-user').innerText = 'Save User Account';
 }
