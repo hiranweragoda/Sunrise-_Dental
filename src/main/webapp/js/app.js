@@ -76,6 +76,8 @@ function switchTab(tabId) {
     // Trigger report loading if report tab is opened
     if (tabId === 'tab-reports') {
         loadReportData();
+    } else if (tabId === 'tab-users') {
+        loadUsers();
     }
 }
 
@@ -346,4 +348,144 @@ function showAlert(boxId, alertClass, message) {
     alertBox.className = `alert ${alertClass}`;
     alertBox.innerHTML = `<span>${alertClass === 'alert-success' ? '✅' : '⚠️'}</span><span>${message}</span>`;
     alertBox.style.display = 'flex';
+}
+
+// 10. User Account Management (Admin Only)
+let allUsersCache = [];
+
+function loadUsers() {
+    const tbody = document.getElementById('users-table-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Loading users...</td></tr>';
+
+    fetch('api/users')
+        .then(res => {
+            if (!res.ok) throw new Error('Failed to load user accounts');
+            return res.json();
+        })
+        .then(users => {
+            allUsersCache = users;
+            tbody.innerHTML = '';
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No user accounts found.</td></tr>';
+                return;
+            }
+
+            users.forEach(u => {
+                const tr = document.createElement('tr');
+                const roleBadge = u.role === 'Admin' ? 
+                    '<span style="background: rgba(14, 165, 233, 0.2); color: #38bdf8; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 600;">Admin</span>' : 
+                    '<span style="background: rgba(148, 163, 184, 0.2); color: #cbd5e1; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem;">Staff</span>';
+
+                tr.innerHTML = `
+                    <td>${u.id}</td>
+                    <td style="font-weight: 600;">${u.username}</td>
+                    <td>${u.fullName}</td>
+                    <td>${roleBadge}</td>
+                    <td style="text-align: right;">
+                        <button type="button" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; margin-right: 6px;" onclick="editUser(${u.id})">Edit</button>
+                        <button type="button" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; border-color: rgba(239, 68, 68, 0.5); color: #f87171;" onclick="deleteUser(${u.id}, '${u.username}')">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        })
+        .catch(err => {
+            console.error(err);
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--color-danger);">Error loading users.</td></tr>';
+        });
+}
+
+function submitUserForm(event) {
+    event.preventDefault();
+    const alertBox = document.getElementById('user-alert');
+    alertBox.style.display = 'none';
+
+    const userId = document.getElementById('user-id').value;
+    const username = document.getElementById('user-username').value.trim();
+    const fullName = document.getElementById('user-fullname').value.trim();
+    const role = document.getElementById('user-role').value;
+    const password = document.getElementById('user-password').value;
+
+    const payload = {
+        id: userId,
+        username: username,
+        full_name: fullName,
+        role: role,
+        password: password
+    };
+
+    fetch('api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.error) {
+            showAlert('user-alert', 'alert-danger', data.error);
+        } else {
+            showAlert('user-alert', 'alert-success', data.message);
+            resetUserForm();
+            loadUsers();
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        showAlert('user-alert', 'alert-danger', 'An unexpected error occurred while saving user.');
+    });
+}
+
+function editUser(userId) {
+    const user = allUsersCache.find(u => u.id === userId);
+    if (!user) return;
+
+    document.getElementById('user-id').value = user.id;
+    document.getElementById('user-username').value = user.username;
+    document.getElementById('user-fullname').value = user.fullName;
+    document.getElementById('user-role').value = user.role;
+    document.getElementById('user-password').value = '';
+    
+    document.getElementById('user-password-hint').innerText = '(Leave blank to keep existing password)';
+    document.getElementById('btn-save-user').innerText = 'Update User Account';
+    
+    const alertBox = document.getElementById('user-alert');
+    alertBox.style.display = 'none';
+    
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function resetUserForm() {
+    document.getElementById('user-form').reset();
+    document.getElementById('user-id').value = '0';
+    document.getElementById('user-password-hint').innerText = '(Required for new users)';
+    document.getElementById('btn-save-user').innerText = 'Save User Account';
+}
+
+function deleteUser(userId, username) {
+    if (currentUser && currentUser.id === userId) {
+        alert("You cannot delete your own logged-in account!");
+        return;
+    }
+
+    if (confirm(`Are you sure you want to delete user account '${username}'?`)) {
+        fetch('api/users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete', id: String(userId) })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) {
+                showAlert('user-alert', 'alert-danger', data.error);
+            } else {
+                showAlert('user-alert', 'alert-success', data.message);
+                loadUsers();
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            showAlert('user-alert', 'alert-danger', 'Failed to delete user.');
+        });
+    }
 }

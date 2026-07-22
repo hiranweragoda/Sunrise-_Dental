@@ -61,6 +61,12 @@
                 <span>Calculate & Bill</span>
             </button>
             <% if ("Admin".equals(role)) { %>
+            <button class="nav-item" onclick="switchTab('tab-users')">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                <span>User Management</span>
+            </button>
             <button class="nav-item" onclick="switchTab('tab-reports')">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -386,6 +392,73 @@
                                     </tbody>
                                 </table>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB: USER MANAGEMENT (ADMIN ONLY) -->
+            <section id="tab-users" class="tab-content">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title">User Account Management</h2>
+                        <p class="panel-subtitle">Create, update, or remove Admin and Staff user credentials</p>
+                    </div>
+
+                    <div id="user-alert" class="alert" style="display: none;"></div>
+
+                    <form id="user-form" onsubmit="submitUserForm(event)">
+                        <input type="hidden" id="user-id" value="0">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="user-username">Username</label>
+                                <input type="text" id="user-username" placeholder="e.g. john_staff" required minlength="3">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="user-fullname">Full Name</label>
+                                <input type="text" id="user-fullname" placeholder="e.g. Johnathan Doe" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="user-role">System Role</label>
+                                <select id="user-role" required>
+                                    <option value="Staff" selected>Staff Member</option>
+                                    <option value="Admin">Administrator</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="user-password">Password <span id="user-password-hint" style="font-weight: normal; font-size: 0.8rem; color: var(--text-muted);">(Required for new users)</span></label>
+                                <input type="password" id="user-password" placeholder="••••••••">
+                            </div>
+                        </div>
+
+                        <div class="form-actions" style="margin-top: 1.5rem;">
+                            <button type="button" class="btn btn-secondary" onclick="resetUserForm()">Clear Form</button>
+                            <button type="submit" id="btn-save-user" class="btn btn-primary">Save User Account</button>
+                        </div>
+                    </form>
+
+                    <div style="margin-top: 2.5rem;">
+                        <h3 style="margin-bottom: 1rem; color: var(--color-primary);">System Users List</h3>
+                        <div style="overflow-x: auto; background: rgba(0, 0, 0, 0.2); border-radius: 12px; border: 1px solid var(--card-border);">
+                            <table class="report-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Username</th>
+                                        <th>Full Name</th>
+                                        <th>Role</th>
+                                        <th style="text-align: right;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-table-tbody">
+                                    <tr>
+                                        <td colspan="5" style="text-align: center; color: var(--text-muted);">Loading users...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
