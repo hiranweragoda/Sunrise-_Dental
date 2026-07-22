@@ -497,7 +497,17 @@
 
                             <div class="form-group">
                                 <label for="dentist-specialization">Specialization</label>
-                                <input type="text" id="dentist-specialization" placeholder="e.g. Orthodontist / General Dentist" required>
+                                <select id="dentist-specialization" required>
+                                    <option value="" disabled selected>Select Specialization</option>
+                                    <option value="General Dentist">General Dentist</option>
+                                    <option value="Orthodontist">Orthodontist</option>
+                                    <option value="Pediatric Dentist">Pediatric Dentist (Pedodontist)</option>
+                                    <option value="Periodontist">Periodontist</option>
+                                    <option value="Endodontist">Endodontist</option>
+                                    <option value="Oral & Maxillofacial Surgeon">Oral & Maxillofacial Surgeon</option>
+                                    <option value="Prosthodontist">Prosthodontist</option>
+                                    <option value="Cosmetic Dentist">Cosmetic Dentist</option>
+                                </select>
                             </div>
 
                             <div class="form-group full-width">
@@ -551,7 +561,19 @@
                         <div class="form-grid">
                             <div class="form-group">
                                 <label for="treatment-name-input">Treatment Service Name</label>
-                                <input type="text" id="treatment-name-input" placeholder="e.g. Dental Scaling & Polishing" required minlength="3">
+                                <select id="treatment-name-input" required>
+                                    <option value="" disabled selected>Select Treatment Service</option>
+                                    <option value="Dental Cleaning & Scaling">Dental Cleaning & Scaling</option>
+                                    <option value="Composite Filling">Composite Filling</option>
+                                    <option value="Tooth Extraction">Tooth Extraction</option>
+                                    <option value="Root Canal Therapy">Root Canal Therapy</option>
+                                    <option value="Teeth Whitening">Teeth Whitening</option>
+                                    <option value="Braces Consultation">Braces Consultation</option>
+                                    <option value="Dental Crown & Bridge">Dental Crown & Bridge</option>
+                                    <option value="Dental Implant Consultation">Dental Implant Consultation</option>
+                                    <option value="Fluoride Treatment">Fluoride Treatment</option>
+                                    <option value="Wisdom Tooth Surgery">Wisdom Tooth Surgery</option>
+                                </select>
                             </div>
 
                             <div class="form-group">
