@@ -14,7 +14,7 @@ import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.List;
 
-@WebServlet("/api/users/*")
+@WebServlet(urlPatterns = {"/api/users", "/api/users/*"})
 public class UserServlet extends HttpServlet {
     private final UserDAO userDAO = new UserDAOImpl();
     private final Gson gson = new Gson();
@@ -62,35 +62,24 @@ public class UserServlet extends HttpServlet {
             String password = req.getParameter("password");
             String action = req.getParameter("action");
 
-            if ("delete".equalsIgnoreCase(action) || "DELETE".equals(req.getMethod())) {
-                if (idStr != null) {
-                    int userId = Integer.parseInt(idStr);
-                    boolean deleted = userDAO.deleteUser(userId);
-                    if (deleted) {
-                        resp.getWriter().write("{\"message\": \"User deleted successfully\"}");
-                    } else {
-                        resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-                        resp.getWriter().write("{\"error\": \"Failed to delete user\"}");
-                    }
-                    return;
-                }
-            }
-
             if (username == null || fullName == null || role == null) {
-                UserFormRequest body = gson.fromJson(req.getReader(), UserFormRequest.class);
-                if (body != null) {
-                    idStr = body.id;
-                    username = body.username;
-                    fullName = body.full_name;
-                    role = body.role;
-                    password = body.password;
-                    action = body.action;
-                }
+                try {
+                    UserFormRequest body = gson.fromJson(req.getReader(), UserFormRequest.class);
+                    if (body != null) {
+                        if (body.id != null) idStr = body.id;
+                        if (body.username != null) username = body.username;
+                        if (body.full_name != null) fullName = body.full_name;
+                        if (body.fullName != null) fullName = body.fullName;
+                        if (body.role != null) role = body.role;
+                        if (body.password != null) password = body.password;
+                        if (body.action != null) action = body.action;
+                    }
+                } catch (Exception ignored) {}
             }
 
-            if ("delete".equalsIgnoreCase(action)) {
-                if (idStr != null) {
-                    int userId = Integer.parseInt(idStr);
+            if ("delete".equalsIgnoreCase(action) || "DELETE".equals(req.getMethod())) {
+                if (idStr != null && !idStr.trim().isEmpty()) {
+                    int userId = Integer.parseInt(idStr.trim());
                     boolean deleted = userDAO.deleteUser(userId);
                     if (deleted) {
                         resp.getWriter().write("{\"message\": \"User deleted successfully\"}");
@@ -154,6 +143,7 @@ public class UserServlet extends HttpServlet {
         String id;
         String username;
         String full_name;
+        String fullName;
         String role;
         String password;
         String action;
