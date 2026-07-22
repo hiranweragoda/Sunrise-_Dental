@@ -27,7 +27,7 @@ INSERT INTO users (username, password_hash, full_name, role) VALUES
 ('staff', '10176e7b7b24d317acfcf8d2064cfd2f24e154f7b5a96603077d5ef813d6a6b6', 'Clinical Staff Member', 'Staff');
 
 -- 2. Treatments Table
-CREATE TABLE treatments (
+CREATE TABLE IF NOT EXISTS treatments (
     id INT AUTO_INCREMENT PRIMARY KEY,
     treatment_name VARCHAR(100) UNIQUE NOT NULL,
     cost DECIMAL(10, 2) NOT NULL
@@ -40,7 +40,24 @@ INSERT INTO treatments (treatment_name, cost) VALUES
 ('Tooth Extraction', 6000.00),
 ('Root Canal Therapy', 45000.00),
 ('Teeth Whitening', 25000.00),
-('Braces Consultation', 3000.00);
+('Braces Consultation', 3000.00)
+ON DUPLICATE KEY UPDATE cost = VALUES(cost);
+
+-- 3. Dentists Table
+CREATE TABLE IF NOT EXISTS dentists (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    dentist_name VARCHAR(100) NOT NULL,
+    specialization VARCHAR(100) NOT NULL,
+    contact_number VARCHAR(20)
+);
+
+-- Seed default dentists
+INSERT INTO dentists (dentist_name, specialization, contact_number) VALUES
+('Dr. Samantha Perera', 'Orthodontist', '0771112233'),
+('Dr. Nishantha Silva', 'General Dentist', '0772223344'),
+('Dr. Priyanga Alwis', 'Pediatric Dentist', '0773334455'),
+('Dr. Shalini Fernando', 'Periodontist', '0774445566')
+ON DUPLICATE KEY UPDATE specialization = VALUES(specialization);
 
 -- 3. Appointments Table
 CREATE TABLE appointments (

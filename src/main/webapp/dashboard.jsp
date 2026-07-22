@@ -67,6 +67,18 @@
                 </svg>
                 <span>User Management</span>
             </button>
+            <button class="nav-item" onclick="switchTab('tab-dentists')">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                <span>Dentist Management</span>
+            </button>
+            <button class="nav-item" onclick="switchTab('tab-treatments')">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L5.605 15.13a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                </svg>
+                <span>Treatment Packages</span>
+            </button>
             <button class="nav-item" onclick="switchTab('tab-reports')">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -121,11 +133,7 @@
                             <div class="form-group">
                                 <label for="dentist_name">Dentist Name</label>
                                 <select id="dentist_name" required>
-                                    <option value="" disabled selected>Select a Dentist</option>
-                                    <option value="Dr. Samantha Perera">Dr. Samantha Perera (Orthodontist)</option>
-                                    <option value="Dr. Nishantha Silva">Dr. Nishantha Silva (General Dentist)</option>
-                                    <option value="Dr. Priyanga Alwis">Dr. Priyanga Alwis (Pediatric Dentist)</option>
-                                    <option value="Dr. Shalini Fernando">Dr. Shalini Fernando (Periodontist)</option>
+                                    <option value="" disabled selected>Loading Dentists...</option>
                                 </select>
                             </div>
 
@@ -461,6 +469,118 @@
                                 <tbody id="users-table-tbody">
                                     <tr>
                                         <td colspan="5" style="text-align: center; color: var(--text-muted);">Loading users...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB: DENTIST MANAGEMENT (ADMIN ONLY) -->
+            <section id="tab-dentists" class="tab-content">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title">Dentist Profile Management</h2>
+                        <p class="panel-subtitle">Register, update, or remove consulting dentists and specializations</p>
+                    </div>
+
+                    <div id="dentist-alert" class="alert" style="display: none;"></div>
+
+                    <form id="dentist-form" onsubmit="submitDentistForm(event)">
+                        <input type="hidden" id="dentist-id" value="0">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="dentist-name-input">Dentist Name</label>
+                                <input type="text" id="dentist-name-input" placeholder="e.g. Dr. Kasun Perera" required minlength="3">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="dentist-specialization">Specialization</label>
+                                <input type="text" id="dentist-specialization" placeholder="e.g. Orthodontist / General Dentist" required>
+                            </div>
+
+                            <div class="form-group full-width">
+                                <label for="dentist-contact">Contact Phone Number</label>
+                                <input type="tel" id="dentist-contact" placeholder="e.g. 0771234567">
+                            </div>
+                        </div>
+
+                        <div class="form-actions" style="margin-top: 1.5rem;">
+                            <button type="button" class="btn btn-secondary" onclick="resetDentistForm()">Clear Form</button>
+                            <button type="submit" id="btn-save-dentist" class="btn btn-primary">Save Dentist Profile</button>
+                        </div>
+                    </form>
+
+                    <div style="margin-top: 2.5rem;">
+                        <h3 style="margin-bottom: 1rem; color: var(--color-primary);">Registered Dentists List</h3>
+                        <div style="overflow-x: auto; background: rgba(0, 0, 0, 0.2); border-radius: 12px; border: 1px solid var(--card-border);">
+                            <table class="report-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Dentist Name</th>
+                                        <th>Specialization</th>
+                                        <th>Contact Number</th>
+                                        <th style="text-align: right;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dentists-table-tbody">
+                                    <tr>
+                                        <td colspan="5" style="text-align: center; color: var(--text-muted);">Loading dentists...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB: TREATMENT SERVICE MANAGEMENT (ADMIN ONLY) -->
+            <section id="tab-treatments" class="tab-content">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title">Treatment Service Packages & Pricing</h2>
+                        <p class="panel-subtitle">Create, update service rates, or remove clinical treatment packages</p>
+                    </div>
+
+                    <div id="treatment-alert" class="alert" style="display: none;"></div>
+
+                    <form id="treatment-form" onsubmit="submitTreatmentForm(event)">
+                        <input type="hidden" id="treatment-id-input" value="0">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="treatment-name-input">Treatment Service Name</label>
+                                <input type="text" id="treatment-name-input" placeholder="e.g. Dental Scaling & Polishing" required minlength="3">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="treatment-cost-input">Service Price / Cost (LKR)</label>
+                                <input type="number" step="0.01" id="treatment-cost-input" placeholder="e.g. 5000.00" required min="0">
+                            </div>
+                        </div>
+
+                        <div class="form-actions" style="margin-top: 1.5rem;">
+                            <button type="button" class="btn btn-secondary" onclick="resetTreatmentForm()">Clear Form</button>
+                            <button type="submit" id="btn-save-treatment" class="btn btn-primary">Save Treatment Service</button>
+                        </div>
+                    </form>
+
+                    <div style="margin-top: 2.5rem;">
+                        <h3 style="margin-bottom: 1rem; color: var(--color-primary);">Clinic Service Rates List</h3>
+                        <div style="overflow-x: auto; background: rgba(0, 0, 0, 0.2); border-radius: 12px; border: 1px solid var(--card-border);">
+                            <table class="report-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Treatment Service Name</th>
+                                        <th style="text-align: right;">Service Cost (LKR)</th>
+                                        <th style="text-align: right;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="treatments-mgmt-table-tbody">
+                                    <tr>
+                                        <td colspan="4" style="text-align: center; color: var(--text-muted);">Loading treatments...</td>
                                     </tr>
                                 </tbody>
                             </table>

@@ -5,6 +5,7 @@ let currentUser = null;
 document.addEventListener('DOMContentLoaded', () => {
     checkAuthentication();
     loadTreatments();
+    loadDentists();
     setMinDate();
 });
 
@@ -28,24 +29,104 @@ function checkAuthentication() {
         });
 }
 
-// 2. Load treatments dropdown dynamically
+// 2. Load treatments dropdown and management table dynamically
+let allTreatmentsCache = [];
+
 function loadTreatments() {
     const dropdown = document.getElementById('treatment_id');
+    const tbody = document.getElementById('treatments-mgmt-table-tbody');
     
     fetch('api/treatments')
         .then(response => response.json())
         .then(treatments => {
-            dropdown.innerHTML = '<option value="" disabled selected>Select a Service</option>';
-            treatments.forEach(t => {
-                const opt = document.createElement('option');
-                opt.value = t.id;
-                opt.innerText = `${t.treatmentName} - LKR ${t.cost.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
-                dropdown.appendChild(opt);
-            });
+            allTreatmentsCache = treatments;
+
+            if (dropdown) {
+                dropdown.innerHTML = '<option value="" disabled selected>Select a Service</option>';
+                treatments.forEach(t => {
+                    const opt = document.createElement('option');
+                    opt.value = t.id;
+                    opt.innerText = `${t.treatmentName} - LKR ${t.cost.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+                    dropdown.appendChild(opt);
+                });
+            }
+
+            if (tbody) {
+                tbody.innerHTML = '';
+                if (treatments.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No treatment packages found.</td></tr>';
+                    return;
+                }
+                treatments.forEach(t => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${t.id}</td>
+                        <td style="font-weight: 600;">${t.treatmentName}</td>
+                        <td style="text-align: right;">LKR ${t.cost.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                        <td style="text-align: right;">
+                            <button type="button" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; margin-right: 6px;" onclick="editTreatment(${t.id})">Edit</button>
+                            <button type="button" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; border-color: rgba(239, 68, 68, 0.5); color: #f87171;" onclick="deleteTreatment(${t.id}, '${t.treatmentName.replace(/'/g, "\\'")}')">Delete</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
         })
         .catch(err => {
             console.error("Error loading treatments:", err);
-            dropdown.innerHTML = '<option value="" disabled>Error loading services</option>';
+            if (dropdown) dropdown.innerHTML = '<option value="" disabled>Error loading services</option>';
+            if (tbody) tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--color-danger);">Error loading treatments.</td></tr>';
+        });
+}
+
+// 2b. Load dentists dropdown and management table dynamically
+let allDentistsCache = [];
+
+function loadDentists() {
+    const dropdown = document.getElementById('dentist_name');
+    const tbody = document.getElementById('dentists-table-tbody');
+
+    fetch('api/dentists')
+        .then(res => res.json())
+        .then(dentists => {
+            allDentistsCache = dentists;
+
+            if (dropdown) {
+                dropdown.innerHTML = '<option value="" disabled selected>Select a Dentist</option>';
+                dentists.forEach(d => {
+                    const opt = document.createElement('option');
+                    opt.value = d.dentistName;
+                    opt.innerText = `${d.dentistName} (${d.specialization})`;
+                    dropdown.appendChild(opt);
+                });
+            }
+
+            if (tbody) {
+                tbody.innerHTML = '';
+                if (dentists.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No dentist records found.</td></tr>';
+                    return;
+                }
+                dentists.forEach(d => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${d.id}</td>
+                        <td style="font-weight: 600;">${d.dentistName}</td>
+                        <td>${d.specialization}</td>
+                        <td>${d.contactNumber || '-'}</td>
+                        <td style="text-align: right;">
+                            <button type="button" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; margin-right: 6px;" onclick="editDentist(${d.id})">Edit</button>
+                            <button type="button" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; border-color: rgba(239, 68, 68, 0.5); color: #f87171;" onclick="deleteDentist(${d.id}, '${d.dentistName.replace(/'/g, "\\'")}')">Delete</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        })
+        .catch(err => {
+            console.error("Error loading dentists:", err);
+            if (dropdown) dropdown.innerHTML = '<option value="" disabled>Error loading dentists</option>';
+            if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--color-danger);">Error loading dentists.</td></tr>';
         });
 }
 
@@ -78,6 +159,10 @@ function switchTab(tabId) {
         loadReportData();
     } else if (tabId === 'tab-users') {
         loadUsers();
+    } else if (tabId === 'tab-dentists') {
+        loadDentists();
+    } else if (tabId === 'tab-treatments') {
+        loadTreatments();
     }
 }
 
@@ -495,6 +580,154 @@ function deleteUser(userId, username) {
         .catch(err => {
             console.error(err);
             showAlert('user-alert', 'alert-danger', 'Failed to delete user.');
+        });
+    }
+}
+
+// 11. Dentist Management (Admin Only)
+function submitDentistForm(event) {
+    event.preventDefault();
+    const alertBox = document.getElementById('dentist-alert');
+    alertBox.style.display = 'none';
+
+    const id = document.getElementById('dentist-id').value;
+    const name = document.getElementById('dentist-name-input').value.trim();
+    const spec = document.getElementById('dentist-specialization').value.trim();
+    const phone = document.getElementById('dentist-contact').value.trim();
+
+    fetch('api/dentists', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: id, dentist_name: name, specialization: spec, contact_number: phone })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.error) {
+            showAlert('dentist-alert', 'alert-danger', data.error);
+        } else {
+            showAlert('dentist-alert', 'alert-success', data.message);
+            resetDentistForm();
+            loadDentists();
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        showAlert('dentist-alert', 'alert-danger', 'An error occurred while saving dentist profile.');
+    });
+}
+
+function editDentist(id) {
+    const dentist = allDentistsCache.find(d => d.id === id);
+    if (!dentist) return;
+
+    document.getElementById('dentist-id').value = dentist.id;
+    document.getElementById('dentist-name-input').value = dentist.dentistName;
+    document.getElementById('dentist-specialization').value = dentist.specialization;
+    document.getElementById('dentist-contact').value = dentist.contactNumber || '';
+    document.getElementById('btn-save-dentist').innerText = 'Update Dentist Profile';
+
+    document.getElementById('dentist-alert').style.display = 'none';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function resetDentistForm() {
+    document.getElementById('dentist-form').reset();
+    document.getElementById('dentist-id').value = '0';
+    document.getElementById('btn-save-dentist').innerText = 'Save Dentist Profile';
+}
+
+function deleteDentist(id, name) {
+    if (confirm(`Are you sure you want to delete dentist record '${name}'?`)) {
+        fetch('api/dentists', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete', id: String(id) })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) {
+                showAlert('dentist-alert', 'alert-danger', data.error);
+            } else {
+                showAlert('dentist-alert', 'alert-success', data.message);
+                loadDentists();
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            showAlert('dentist-alert', 'alert-danger', 'Failed to delete dentist.');
+        });
+    }
+}
+
+// 12. Treatment Package Management (Admin Only)
+function submitTreatmentForm(event) {
+    event.preventDefault();
+    const alertBox = document.getElementById('treatment-alert');
+    alertBox.style.display = 'none';
+
+    const id = document.getElementById('treatment-id-input').value;
+    const name = document.getElementById('treatment-name-input').value.trim();
+    const cost = document.getElementById('treatment-cost-input').value;
+
+    fetch('api/treatments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: id, treatment_name: name, cost: cost })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.error) {
+            showAlert('treatment-alert', 'alert-danger', data.error);
+        } else {
+            showAlert('treatment-alert', 'alert-success', data.message);
+            resetTreatmentForm();
+            loadTreatments();
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        showAlert('treatment-alert', 'alert-danger', 'An error occurred while saving treatment service.');
+    });
+}
+
+function editTreatment(id) {
+    const treatment = allTreatmentsCache.find(t => t.id === id);
+    if (!treatment) return;
+
+    document.getElementById('treatment-id-input').value = treatment.id;
+    document.getElementById('treatment-name-input').value = treatment.treatmentName;
+    document.getElementById('treatment-cost-input').value = treatment.cost;
+    document.getElementById('btn-save-treatment').innerText = 'Update Treatment Service';
+
+    document.getElementById('treatment-alert').style.display = 'none';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function resetTreatmentForm() {
+    document.getElementById('treatment-form').reset();
+    document.getElementById('treatment-id-input').value = '0';
+    document.getElementById('btn-save-treatment').innerText = 'Save Treatment Service';
+}
+
+function deleteTreatment(id, name) {
+    if (confirm(`Are you sure you want to delete treatment package '${name}'?`)) {
+        fetch('api/treatments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete', id: String(id) })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) {
+                showAlert('treatment-alert', 'alert-danger', data.error);
+            } else {
+                showAlert('treatment-alert', 'alert-success', data.message);
+                loadTreatments();
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            showAlert('treatment-alert', 'alert-danger', 'Failed to delete treatment package.');
         });
     }
 }

@@ -1,9 +1,9 @@
 package com.sunrisedental.controller;
 
 import com.google.gson.Gson;
-import com.sunrisedental.dao.TreatmentDAO;
-import com.sunrisedental.dao.impl.TreatmentDAOImpl;
-import com.sunrisedental.model.Treatment;
+import com.sunrisedental.dao.DentistDAO;
+import com.sunrisedental.dao.impl.DentistDAOImpl;
+import com.sunrisedental.model.Dentist;
 import com.sunrisedental.model.User;
 
 import javax.servlet.ServletException;
@@ -13,12 +13,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.util.List;
 
-@WebServlet(urlPatterns = {"/api/treatments", "/api/treatments/*"})
-public class TreatmentServlet extends HttpServlet {
-    private final TreatmentDAO treatmentDAO = new TreatmentDAOImpl();
+@WebServlet(urlPatterns = {"/api/dentists", "/api/dentists/*"})
+public class DentistServlet extends HttpServlet {
+    private final DentistDAO dentistDAO = new DentistDAOImpl();
     private final Gson gson = new Gson();
 
     private boolean isAdmin(HttpServletRequest req) {
@@ -35,8 +34,8 @@ public class TreatmentServlet extends HttpServlet {
         resp.setContentType("application/json");
         resp.setCharacterEncoding("UTF-8");
 
-        List<Treatment> treatments = treatmentDAO.getAllTreatments();
-        resp.getWriter().write(gson.toJson(treatments));
+        List<Dentist> list = dentistDAO.getAllDentists();
+        resp.getWriter().write(gson.toJson(list));
     }
 
     @Override
@@ -46,24 +45,27 @@ public class TreatmentServlet extends HttpServlet {
 
         if (!isAdmin(req)) {
             resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            resp.getWriter().write("{\"error\": \"Only administrators can manage treatment services.\"}");
+            resp.getWriter().write("{\"error\": \"Only administrators can manage dentist records.\"}");
             return;
         }
 
         try {
             String idStr = req.getParameter("id");
-            String treatmentName = req.getParameter("treatment_name");
-            String costStr = req.getParameter("cost");
+            String dentistName = req.getParameter("dentist_name");
+            String specialization = req.getParameter("specialization");
+            String contactNumber = req.getParameter("contact_number");
             String action = req.getParameter("action");
 
-            if (treatmentName == null || costStr == null) {
+            if (dentistName == null || specialization == null) {
                 try {
-                    TreatmentRequest body = gson.fromJson(req.getReader(), TreatmentRequest.class);
+                    DentistRequest body = gson.fromJson(req.getReader(), DentistRequest.class);
                     if (body != null) {
                         if (body.id != null) idStr = body.id;
-                        if (body.treatment_name != null) treatmentName = body.treatment_name;
-                        if (body.treatmentName != null) treatmentName = body.treatmentName;
-                        if (body.cost != null) costStr = body.cost;
+                        if (body.dentist_name != null) dentistName = body.dentist_name;
+                        if (body.dentistName != null) dentistName = body.dentistName;
+                        if (body.specialization != null) specialization = body.specialization;
+                        if (body.contact_number != null) contactNumber = body.contact_number;
+                        if (body.contactNumber != null) contactNumber = body.contactNumber;
                         if (body.action != null) action = body.action;
                     }
                 } catch (Exception ignored) {}
@@ -72,55 +74,46 @@ public class TreatmentServlet extends HttpServlet {
             if ("delete".equalsIgnoreCase(action) || "DELETE".equals(req.getMethod())) {
                 if (idStr != null && !idStr.trim().isEmpty()) {
                     int id = Integer.parseInt(idStr.trim());
-                    boolean deleted = treatmentDAO.deleteTreatment(id);
+                    boolean deleted = dentistDAO.deleteDentist(id);
                     if (deleted) {
-                        resp.getWriter().write("{\"message\": \"Treatment service deleted successfully\"}");
+                        resp.getWriter().write("{\"message\": \"Dentist deleted successfully\"}");
                     } else {
                         resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-                        resp.getWriter().write("{\"error\": \"Failed to delete treatment service\"}");
+                        resp.getWriter().write("{\"error\": \"Failed to delete dentist record\"}");
                     }
                     return;
                 }
             }
 
-            if (treatmentName == null || treatmentName.trim().isEmpty() ||
-                costStr == null || costStr.trim().isEmpty()) {
+            if (dentistName == null || dentistName.trim().isEmpty() ||
+                specialization == null || specialization.trim().isEmpty()) {
                 resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                resp.getWriter().write("{\"error\": \"Treatment Name and Price (Cost) are required.\"}");
-                return;
-            }
-
-            BigDecimal cost = new BigDecimal(costStr.trim());
-            if (cost.compareTo(BigDecimal.ZERO) < 0) {
-                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                resp.getWriter().write("{\"error\": \"Cost cannot be negative.\"}");
+                resp.getWriter().write("{\"error\": \"Dentist Name and Specialization are required.\"}");
                 return;
             }
 
             boolean isUpdate = (idStr != null && !idStr.trim().isEmpty() && !idStr.trim().equals("0"));
 
-            Treatment t = new Treatment();
-            t.setTreatmentName(treatmentName.trim());
-            t.setCost(cost);
+            Dentist d = new Dentist();
+            d.setDentistName(dentistName.trim());
+            d.setSpecialization(specialization.trim());
+            d.setContactNumber(contactNumber != null ? contactNumber.trim() : "");
 
             boolean success;
             if (isUpdate) {
-                t.setId(Integer.parseInt(idStr.trim()));
-                success = treatmentDAO.updateTreatment(t);
+                d.setId(Integer.parseInt(idStr.trim()));
+                success = dentistDAO.updateDentist(d);
             } else {
-                success = treatmentDAO.createTreatment(t);
+                success = dentistDAO.createDentist(d);
             }
 
             if (success) {
-                resp.getWriter().write("{\"message\": \"" + (isUpdate ? "Treatment service updated successfully" : "Treatment service added successfully") + "\"}");
+                resp.getWriter().write("{\"message\": \"" + (isUpdate ? "Dentist updated successfully" : "Dentist registered successfully") + "\"}");
             } else {
                 resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-                resp.getWriter().write("{\"error\": \"" + (isUpdate ? "Failed to update treatment service" : "Failed to add treatment service (name may already exist)") + "\"}");
+                resp.getWriter().write("{\"error\": \"" + (isUpdate ? "Failed to update dentist record" : "Failed to register dentist") + "\"}");
             }
 
-        } catch (NumberFormatException e) {
-            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().write("{\"error\": \"Invalid cost format.\"}");
         } catch (Exception e) {
             e.printStackTrace();
             resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
@@ -133,11 +126,13 @@ public class TreatmentServlet extends HttpServlet {
         doPost(req, resp);
     }
 
-    private static class TreatmentRequest {
+    private static class DentistRequest {
         String id;
-        String treatment_name;
-        String treatmentName;
-        String cost;
+        String dentist_name;
+        String dentistName;
+        String specialization;
+        String contact_number;
+        String contactNumber;
         String action;
     }
 }
