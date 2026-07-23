@@ -14,37 +14,6 @@ import java.util.List;
 
 public class UserDAOImpl implements UserDAO {
 
-    public UserDAOImpl() {
-        createTableAndBootstrapDefaults();
-    }
-
-    private void createTableAndBootstrapDefaults() {
-        String createSql = "CREATE TABLE IF NOT EXISTS users (" +
-                "id INT AUTO_INCREMENT PRIMARY KEY, " +
-                "username VARCHAR(50) UNIQUE NOT NULL, " +
-                "password_hash VARCHAR(255) NOT NULL, " +
-                "full_name VARCHAR(100) NOT NULL, " +
-                "role VARCHAR(20) NOT NULL" +
-                ")";
-        try (Connection conn = DBConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(createSql)) {
-            ps.executeUpdate();
-
-            // Check if users table is empty
-            String checkSql = "SELECT COUNT(*) FROM users";
-            try (PreparedStatement checkPs = conn.prepareStatement(checkSql);
-                 ResultSet rs = checkPs.executeQuery()) {
-                if (rs.next() && rs.getInt(1) == 0) {
-                    // Seed default admin and staff user accounts
-                    createUser(new User(0, "admin", "System Administrator", "Admin"), "admin123");
-                    createUser(new User(0, "staff", "Clinic Staff Member", "Staff"), "staff123");
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
     @Override
     public User authenticate(String username, String password) {
         String sql = "SELECT id, username, full_name, role, password_hash FROM users WHERE username = ?";

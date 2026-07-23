@@ -12,40 +12,6 @@ import java.util.List;
 
 public class DentistDAOImpl implements DentistDAO {
 
-    private void ensureTableExists() {
-        String createSql = "CREATE TABLE IF NOT EXISTS dentists (" +
-                           "id INT AUTO_INCREMENT PRIMARY KEY, " +
-                           "dentist_name VARCHAR(100) NOT NULL, " +
-                           "specialization VARCHAR(100) NOT NULL, " +
-                           "contact_number VARCHAR(20))";
-        try (Connection conn = DBConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(createSql)) {
-            ps.execute();
-
-            // Seed default dentists if table is empty
-            String countSql = "SELECT COUNT(*) FROM dentists";
-            try (PreparedStatement countPs = conn.prepareStatement(countSql);
-                 ResultSet rs = countPs.executeQuery()) {
-                if (rs.next() && rs.getInt(1) == 0) {
-                    String seedSql = "INSERT INTO dentists (dentist_name, specialization, contact_number) VALUES " +
-                                     "('Dr. Samantha Perera', 'Orthodontist', '0771112233'), " +
-                                     "('Dr. Nishantha Silva', 'General Dentist', '0772223344'), " +
-                                     "('Dr. Priyanga Alwis', 'Pediatric Dentist', '0773334455'), " +
-                                     "('Dr. Shalini Fernando', 'Periodontist', '0774445566')";
-                    try (PreparedStatement seedPs = conn.prepareStatement(seedSql)) {
-                        seedPs.executeUpdate();
-                    }
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public DentistDAOImpl() {
-        ensureTableExists();
-    }
-
     @Override
     public List<Dentist> getAllDentists() {
         List<Dentist> list = new ArrayList<>();

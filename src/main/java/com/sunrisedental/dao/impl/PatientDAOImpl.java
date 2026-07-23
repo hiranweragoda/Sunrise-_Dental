@@ -12,26 +12,6 @@ import java.util.List;
 
 public class PatientDAOImpl implements PatientDAO {
 
-    private void ensureTableExists() {
-        String createSql = "CREATE TABLE IF NOT EXISTS patients (" +
-                           "id INT AUTO_INCREMENT PRIMARY KEY, " +
-                           "patient_name VARCHAR(100) NOT NULL, " +
-                           "nic_passport VARCHAR(50) UNIQUE NOT NULL, " +
-                           "address VARCHAR(255), " +
-                           "phone_number VARCHAR(20) NOT NULL, " +
-                           "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)";
-        try (Connection conn = DBConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(createSql)) {
-            ps.execute();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public PatientDAOImpl() {
-        ensureTableExists();
-    }
-
     @Override
     public List<Patient> getAllPatients() {
         List<Patient> list = new ArrayList<>();

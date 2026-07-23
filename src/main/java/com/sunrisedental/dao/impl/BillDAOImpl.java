@@ -17,29 +17,6 @@ import java.util.Map;
 
 public class BillDAOImpl implements BillDAO {
 
-    public BillDAOImpl() {
-        createPaymentsTableIfNotExists();
-    }
-
-    private void createPaymentsTableIfNotExists() {
-        String createSql = "CREATE TABLE IF NOT EXISTS payments (" +
-                "payment_id INT AUTO_INCREMENT PRIMARY KEY, " +
-                "bill_id INT, " +
-                "appointment_number VARCHAR(50) NOT NULL, " +
-                "payment_method VARCHAR(20) NOT NULL, " +
-                "total_amount DECIMAL(10,2) NOT NULL, " +
-                "cash_given DECIMAL(10,2), " +
-                "balance_returned DECIMAL(10,2), " +
-                "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP" +
-                ")";
-        try (Connection conn = DBConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(createSql)) {
-            ps.executeUpdate();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
     @Override
     public Bill generateBill(String appointmentNumber, BigDecimal consultationFee) {
         return generateBill(appointmentNumber, consultationFee, "Cash", null, null);
