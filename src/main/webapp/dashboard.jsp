@@ -45,7 +45,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Sunrise Dental Management (MVC)</title>
-    <link rel="stylesheet" href="css/style.css?v=7">
+    <link rel="stylesheet" href="css/style.css?v=8">
 </head>
 <body class="dashboard-body">
 
@@ -87,7 +87,7 @@
             </a>
             <a href="dashboard?tab=tab-billing" onclick="switchTab('tab-billing'); return false;" id="nav-tab-billing" class="nav-item <%= "tab-billing".equals(activeTab) ? "active" : "" %>">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                 </svg>
                 <span>Calculate & Bill</span>
             </a>
@@ -292,7 +292,7 @@
                                             <td><%= p.getPhoneNumber() %></td>
                                             <td><%= p.getAddress() != null ? p.getAddress() : "-" %></td>
                                             <td style="text-align: right;">
-                                                <button type="button" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; border-color: rgba(56, 189, 248, 0.5); color: #38bdf8; margin-right: 4px;" onclick="editPatient(<%= p.getId() %>, '<%= p.getPatientName().replace("'", "\\'") %>', '<%= p.getNicPassport() %>', '<%= p.getPhoneNumber() %>', '<%= p.getAddress() != null ? p.getAddress().replace("'", "\\'") : "" %>')">Edit</button>
+                                                <button type="button" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; border-color: rgba(56, 189, 248, 0.5); color: #38bdf8; margin-right: 4px;" data-id="<%= p.getId() %>" data-name="<%= p.getPatientName() %>" data-nic="<%= p.getNicPassport() %>" data-phone="<%= p.getPhoneNumber() %>" data-address="<%= p.getAddress() != null ? p.getAddress() : "" %>" onclick="handleEditPatient(this)">Edit</button>
                                                 <a href="patients?action=delete&id=<%= p.getId() %>" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; border-color: rgba(239, 68, 68, 0.5); color: #f87171;" onclick="return confirm('Delete patient <%= p.getPatientName() %>?')">Delete</a>
                                             </td>
                                         </tr>
@@ -447,8 +447,10 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <% if (appointments != null && !appointments.isEmpty()) { for (Appointment a : appointments) { %>
-                                    <tr style="<%= (searchedAppointment != null && a.getAppointmentNumber().equals(searchedAppointment.getAppointmentNumber())) ? "background: rgba(56, 189, 248, 0.15);" : "" %>">
+                                <% if (appointments != null && !appointments.isEmpty()) { for (Appointment a : appointments) {
+                                    boolean isSelected = (searchedAppointment != null && a.getAppointmentNumber().equals(searchedAppointment.getAppointmentNumber()));
+                                %>
+                                    <tr style="<%= isSelected ? "background: rgba(56, 189, 248, 0.15);" : "" %>">
                                         <td><strong><%= a.getAppointmentNumber() %></strong></td>
                                         <td><%= a.getPatientName() %></td>
                                         <td><%= a.getContactNumber() %></td>
@@ -567,7 +569,7 @@
                                             <td><%= u.getFullName() %></td>
                                             <td><span class="status-pill status-scheduled"><%= u.getRole() %></span></td>
                                             <td style="text-align: right;">
-                                                <button type="button" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; border-color: rgba(56, 189, 248, 0.5); color: #38bdf8; margin-right: 4px;" onclick="editUser(<%= u.getId() %>, '<%= u.getUsername().replace("'", "\\'") %>', '<%= u.getFullName().replace("'", "\\'") %>', '<%= u.getRole() %>')">Edit</button>
+                                                <button type="button" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; border-color: rgba(56, 189, 248, 0.5); color: #38bdf8; margin-right: 4px;" data-id="<%= u.getId() %>" data-username="<%= u.getUsername() %>" data-fullname="<%= u.getFullName() %>" data-role="<%= u.getRole() %>" onclick="handleEditUser(this)">Edit</button>
                                                 <a href="users?action=delete&id=<%= u.getId() %>" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; border-color: rgba(239, 68, 68, 0.5); color: #f87171;" onclick="return confirm('Delete user <%= u.getUsername() %>?')">Delete</a>
                                             </td>
                                         </tr>
@@ -645,7 +647,7 @@
                                             <td><%= d.getSpecialization() %></td>
                                             <td><%= d.getContactNumber() != null ? d.getContactNumber() : "-" %></td>
                                             <td style="text-align: right;">
-                                                <button type="button" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; border-color: rgba(56, 189, 248, 0.5); color: #38bdf8; margin-right: 4px;" onclick="editDentist(<%= d.getId() %>, '<%= d.getDentistName().replace("'", "\\'") %>', '<%= d.getSpecialization().replace("'", "\\'") %>', '<%= d.getContactNumber() != null ? d.getContactNumber() : "" %>')">Edit</button>
+                                                <button type="button" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; border-color: rgba(56, 189, 248, 0.5); color: #38bdf8; margin-right: 4px;" data-id="<%= d.getId() %>" data-name="<%= d.getDentistName() %>" data-spec="<%= d.getSpecialization() %>" data-contact="<%= d.getContactNumber() != null ? d.getContactNumber() : "" %>" onclick="handleEditDentist(this)">Edit</button>
                                                 <a href="dentists?action=delete&id=<%= d.getId() %>" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; border-color: rgba(239, 68, 68, 0.5); color: #f87171;" onclick="return confirm('Delete dentist <%= d.getDentistName() %>?')">Delete</a>
                                             </td>
                                         </tr>
@@ -718,7 +720,7 @@
                                             <td style="font-weight: 600;"><%= t.getTreatmentName() %></td>
                                             <td style="text-align: right;">LKR <%= String.format("%,.2f", t.getCost()) %></td>
                                             <td style="text-align: right;">
-                                                <button type="button" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; border-color: rgba(56, 189, 248, 0.5); color: #38bdf8; margin-right: 4px;" onclick="editTreatment(<%= t.getId() %>, '<%= t.getTreatmentName().replace("'", "\\'") %>', '<%= t.getCost() %>')">Edit</button>
+                                                <button type="button" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; border-color: rgba(56, 189, 248, 0.5); color: #38bdf8; margin-right: 4px;" data-id="<%= t.getId() %>" data-name="<%= t.getTreatmentName() %>" data-cost="<%= t.getCost() %>" onclick="handleEditTreatment(this)">Edit</button>
                                                 <a href="treatments?action=delete&id=<%= t.getId() %>" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; border-color: rgba(239, 68, 68, 0.5); color: #f87171;" onclick="return confirm('Delete treatment <%= t.getTreatmentName() %>?')">Delete</a>
                                             </td>
                                         </tr>
@@ -800,6 +802,6 @@
         </main>
     </div>
 
-    <script src="js/app.js?v=7"></script>
+    <script src="js/app.js?v=8"></script>
 </body>
 </html>

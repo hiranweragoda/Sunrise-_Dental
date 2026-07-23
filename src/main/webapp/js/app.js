@@ -64,6 +64,39 @@ function toggleApptUpdateForm() {
     }
 }
 
+// Handle Data Attributes for Edit
+function handleEditPatient(btn) {
+    const id = btn.getAttribute('data-id');
+    const name = btn.getAttribute('data-name');
+    const nic = btn.getAttribute('data-nic');
+    const phone = btn.getAttribute('data-phone');
+    const address = btn.getAttribute('data-address');
+    editPatient(id, name, nic, phone, address);
+}
+
+function handleEditUser(btn) {
+    const id = btn.getAttribute('data-id');
+    const username = btn.getAttribute('data-username');
+    const fullname = btn.getAttribute('data-fullname');
+    const role = btn.getAttribute('data-role');
+    editUser(id, username, fullname, role);
+}
+
+function handleEditDentist(btn) {
+    const id = btn.getAttribute('data-id');
+    const name = btn.getAttribute('data-name');
+    const spec = btn.getAttribute('data-spec');
+    const contact = btn.getAttribute('data-contact');
+    editDentist(id, name, spec, contact);
+}
+
+function handleEditTreatment(btn) {
+    const id = btn.getAttribute('data-id');
+    const name = btn.getAttribute('data-name');
+    const cost = btn.getAttribute('data-cost');
+    editTreatment(id, name, cost);
+}
+
 // Edit populate functions
 function editPatient(id, name, nic, phone, address) {
     switchTab('tab-patients');
@@ -77,7 +110,7 @@ function editPatient(id, name, nic, phone, address) {
     if (phoneInput) phoneInput.value = phone;
     const addrInput = document.getElementById('patient-address-input');
     if (addrInput) addrInput.value = address || '';
-
+    
     const submitBtn = document.querySelector('#tab-patients form button[type="submit"]');
     if (submitBtn) submitBtn.textContent = 'Update Patient Profile';
     if (nameInput) nameInput.focus();
