@@ -43,7 +43,7 @@ public class BillDAOImpl implements BillDAO {
 
     @Override
     public Bill getBillByAppointmentNumber(String appointmentNumber) {
-        String sql = "SELECT b.*, a.patient_name, t.treatment_name, t.cost as treatment_cost " +
+        String sql = "SELECT b.*, a.patient_name, a.dentist_name, t.treatment_name, t.cost as treatment_cost " +
                      "FROM bills b " +
                      "JOIN appointments a ON b.appointment_number = a.appointment_number " +
                      "JOIN treatments t ON a.treatment_id = t.id " +
@@ -62,6 +62,7 @@ public class BillDAOImpl implements BillDAO {
                     bill.setBillDate(rs.getTimestamp("bill_date"));
                     bill.setPaymentStatus(rs.getString("payment_status"));
                     bill.setPatientName(rs.getString("patient_name"));
+                    bill.setDentistName(rs.getString("dentist_name"));
                     bill.setTreatmentName(rs.getString("treatment_name"));
                     bill.setTreatmentCost(rs.getBigDecimal("treatment_cost"));
                     return bill;

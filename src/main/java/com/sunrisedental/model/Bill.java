@@ -13,6 +13,7 @@ public class Bill {
 
     // Optional join fields for receipt formatting
     private String patientName;
+    private String dentistName;
     private String treatmentName;
     private BigDecimal treatmentCost;
 
@@ -20,6 +21,8 @@ public class Bill {
 
     public int getBillId() { return billId; }
     public void setBillId(int billId) { this.billId = billId; }
+
+    public String getBillNumber() { return "INV-" + (1000 + billId); }
 
     public String getAppointmentNumber() { return appointmentNumber; }
     public void setAppointmentNumber(String appointmentNumber) { this.appointmentNumber = appointmentNumber; }
@@ -30,6 +33,8 @@ public class Bill {
     public BigDecimal getTotalCost() { return totalCost; }
     public void setTotalCost(BigDecimal totalCost) { this.totalCost = totalCost; }
 
+    public BigDecimal getTotalAmount() { return totalCost; }
+
     public Timestamp getBillDate() { return billDate; }
     public void setBillDate(Timestamp billDate) { this.billDate = billDate; }
 
@@ -38,6 +43,9 @@ public class Bill {
 
     public String getPatientName() { return patientName; }
     public void setPatientName(String patientName) { this.patientName = patientName; }
+
+    public String getDentistName() { return dentistName; }
+    public void setDentistName(String dentistName) { this.dentistName = dentistName; }
 
     public String getTreatmentName() { return treatmentName; }
     public void setTreatmentName(String treatmentName) { this.treatmentName = treatmentName; }

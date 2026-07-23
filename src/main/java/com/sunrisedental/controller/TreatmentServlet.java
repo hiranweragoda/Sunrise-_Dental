@@ -16,7 +16,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
 
-@WebServlet(urlPatterns = {"/api/treatments", "/api/treatments/*"})
+@WebServlet(urlPatterns = {"/treatments", "/api/treatments", "/api/treatments/*"})
 public class TreatmentServlet extends HttpServlet {
     private final TreatmentDAO treatmentDAO = new TreatmentDAOImpl();
     private final Gson gson = new Gson();
@@ -32,21 +32,38 @@ public class TreatmentServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String action = req.getParameter("action");
+        String idStr = req.getParameter("id");
+        HttpSession session = req.getSession(false);
+
+        if ("delete".equalsIgnoreCase(action) && idStr != null && !idStr.trim().isEmpty() && isAdmin(req)) {
+            try {
+                int id = Integer.parseInt(idStr.trim());
+                boolean deleted = treatmentDAO.deleteTreatment(id);
+                if (deleted && session != null) {
+                    session.setAttribute("flashSuccess", "Treatment service deleted successfully.");
+                } else if (session != null) {
+                    session.setAttribute("flashError", "Failed to delete treatment service.");
+                }
+            } catch (Exception e) {
+                if (session != null) session.setAttribute("flashError", "Error deleting treatment: " + e.getMessage());
+            }
+            resp.sendRedirect(req.getContextPath() + "/dashboard?tab=tab-treatments");
+            return;
+        }
+
         resp.setContentType("application/json");
         resp.setCharacterEncoding("UTF-8");
-
         List<Treatment> treatments = treatmentDAO.getAllTreatments();
         resp.getWriter().write(gson.toJson(treatments));
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        resp.setContentType("application/json");
-        resp.setCharacterEncoding("UTF-8");
-
+        HttpSession session = req.getSession(false);
         if (!isAdmin(req)) {
-            resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            resp.getWriter().write("{\"error\": \"Only administrators can manage treatment services.\"}");
+            if (session != null) session.setAttribute("flashError", "Only administrators can manage treatment services.");
+            resp.sendRedirect(req.getContextPath() + "/dashboard?tab=tab-treatments");
             return;
         }
 
@@ -56,44 +73,31 @@ public class TreatmentServlet extends HttpServlet {
             String costStr = req.getParameter("cost");
             String action = req.getParameter("action");
 
-            if (treatmentName == null || costStr == null) {
-                try {
-                    TreatmentRequest body = gson.fromJson(req.getReader(), TreatmentRequest.class);
-                    if (body != null) {
-                        if (body.id != null) idStr = body.id;
-                        if (body.treatment_name != null) treatmentName = body.treatment_name;
-                        if (body.treatmentName != null) treatmentName = body.treatmentName;
-                        if (body.cost != null) costStr = body.cost;
-                        if (body.action != null) action = body.action;
-                    }
-                } catch (Exception ignored) {}
-            }
-
-            if ("delete".equalsIgnoreCase(action) || "DELETE".equals(req.getMethod())) {
+            if ("delete".equalsIgnoreCase(action)) {
                 if (idStr != null && !idStr.trim().isEmpty()) {
                     int id = Integer.parseInt(idStr.trim());
                     boolean deleted = treatmentDAO.deleteTreatment(id);
-                    if (deleted) {
-                        resp.getWriter().write("{\"message\": \"Treatment service deleted successfully\"}");
-                    } else {
-                        resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-                        resp.getWriter().write("{\"error\": \"Failed to delete treatment service\"}");
+                    if (deleted && session != null) {
+                        session.setAttribute("flashSuccess", "Treatment service deleted successfully.");
+                    } else if (session != null) {
+                        session.setAttribute("flashError", "Failed to delete treatment service.");
                     }
-                    return;
                 }
+                resp.sendRedirect(req.getContextPath() + "/dashboard?tab=tab-treatments");
+                return;
             }
 
             if (treatmentName == null || treatmentName.trim().isEmpty() ||
                 costStr == null || costStr.trim().isEmpty()) {
-                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                resp.getWriter().write("{\"error\": \"Treatment Name and Price (Cost) are required.\"}");
+                if (session != null) session.setAttribute("flashError", "Treatment Name and Price (Cost) are required.");
+                resp.sendRedirect(req.getContextPath() + "/dashboard?tab=tab-treatments");
                 return;
             }
 
             BigDecimal cost = new BigDecimal(costStr.trim());
             if (cost.compareTo(BigDecimal.ZERO) < 0) {
-                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                resp.getWriter().write("{\"error\": \"Cost cannot be negative.\"}");
+                if (session != null) session.setAttribute("flashError", "Cost cannot be negative.");
+                resp.sendRedirect(req.getContextPath() + "/dashboard?tab=tab-treatments");
                 return;
             }
 
@@ -111,33 +115,17 @@ public class TreatmentServlet extends HttpServlet {
                 success = treatmentDAO.createTreatment(t);
             }
 
-            if (success) {
-                resp.getWriter().write("{\"message\": \"" + (isUpdate ? "Treatment service updated successfully" : "Treatment service added successfully") + "\"}");
-            } else {
-                resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-                resp.getWriter().write("{\"error\": \"" + (isUpdate ? "Failed to update treatment service" : "Failed to add treatment service (name may already exist)") + "\"}");
+            if (success && session != null) {
+                session.setAttribute("flashSuccess", isUpdate ? "Treatment service package updated successfully!" : "Treatment service package created successfully!");
+            } else if (session != null) {
+                session.setAttribute("flashError", isUpdate ? "Failed to update treatment service package." : "Failed to create treatment service package.");
             }
 
-        } catch (NumberFormatException e) {
-            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().write("{\"error\": \"Invalid cost format.\"}");
         } catch (Exception e) {
             e.printStackTrace();
-            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            resp.getWriter().write("{\"error\": \"An error occurred: " + e.getMessage() + "\"}");
+            if (session != null) session.setAttribute("flashError", "Error: " + e.getMessage());
         }
-    }
 
-    @Override
-    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        doPost(req, resp);
-    }
-
-    private static class TreatmentRequest {
-        String id;
-        String treatment_name;
-        String treatmentName;
-        String cost;
-        String action;
+        resp.sendRedirect(req.getContextPath() + "/dashboard?tab=tab-treatments");
     }
 }

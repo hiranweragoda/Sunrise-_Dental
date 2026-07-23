@@ -20,6 +20,9 @@ public class AppointmentDAOImpl implements AppointmentDAO {
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             
+            if (app.getAppointmentNumber() == null || app.getAppointmentNumber().trim().isEmpty()) {
+                app.setAppointmentNumber("APPT-" + (1000 + new java.util.Random().nextInt(9000)));
+            }
             ps.setString(1, app.getAppointmentNumber());
             ps.setString(2, app.getPatientName());
             ps.setString(3, app.getAddress());
@@ -117,5 +120,37 @@ public class AppointmentDAOImpl implements AppointmentDAO {
             e.printStackTrace();
         }
         return stats;
+    }
+
+    @Override
+    public boolean updateAppointmentStatus(String appointmentNumber, String status) {
+        String sql = "UPDATE appointments SET status = ? WHERE appointment_number = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, status);
+            ps.setString(2, appointmentNumber);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    @Override
+    public boolean updateAppointmentDetails(Appointment app) {
+        String sql = "UPDATE appointments SET dentist_name = ?, treatment_id = ?, appointment_date = ?, appointment_time = ?, status = ? WHERE appointment_number = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, app.getDentistName());
+            ps.setInt(2, app.getTreatmentId());
+            ps.setDate(3, app.getAppointmentDate());
+            ps.setTime(4, app.getAppointmentTime());
+            ps.setString(5, app.getStatus());
+            ps.setString(6, app.getAppointmentNumber());
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 }

@@ -1,136 +1,160 @@
 package com.sunrisedental.controller;
 
-import com.google.gson.Gson;
 import com.sunrisedental.dao.AppointmentDAO;
+import com.sunrisedental.dao.PatientDAO;
+import com.sunrisedental.dao.impl.AppointmentDAOImpl;
+import com.sunrisedental.dao.impl.PatientDAOImpl;
 import com.sunrisedental.model.Appointment;
+import com.sunrisedental.model.Patient;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.Date;
 import java.sql.Time;
-import java.util.List;
-import java.util.Map;
 import java.util.Random;
 
-@WebServlet("/api/appointments/*")
+@WebServlet("/appointments")
 public class AppointmentServlet extends HttpServlet {
-    private final AppointmentDAO appointmentDAO = new com.sunrisedental.dao.impl.AppointmentDAOImpl();
-    private final Gson gson = new Gson();
 
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        resp.setContentType("application/json");
-        resp.setCharacterEncoding("UTF-8");
-
-        String pathInfo = req.getPathInfo();
-
-        if ("/stats".equals(pathInfo)) {
-            List<Map<String, Object>> stats = appointmentDAO.getDentistStatistics();
-            resp.getWriter().write(gson.toJson(stats));
-            return;
-        }
-
-        String appointmentNumber = req.getParameter("number");
-        if (appointmentNumber != null && !appointmentNumber.trim().isEmpty()) {
-            Appointment app = appointmentDAO.getAppointmentByNumber(appointmentNumber.trim());
-            if (app != null) {
-                resp.getWriter().write(gson.toJson(app));
-            } else {
-                resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
-                resp.getWriter().write("{\"error\": \"Appointment not found\"}");
-            }
-        } else {
-            List<Appointment> list = appointmentDAO.getAllAppointments();
-            resp.getWriter().write(gson.toJson(list));
-        }
-    }
+    private final AppointmentDAO appointmentDAO = new AppointmentDAOImpl();
+    private final PatientDAO patientDAO = new PatientDAOImpl();
+    private final Random random = new Random();
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        resp.setContentType("application/json");
-        resp.setCharacterEncoding("UTF-8");
+        HttpSession session = req.getSession(false);
+        if (session == null || session.getAttribute("user") == null) {
+            resp.sendRedirect(req.getContextPath() + "/login");
+            return;
+        }
+
+        String action = req.getParameter("action");
+        if ("update".equalsIgnoreCase(action)) {
+            try {
+                String apptNum = req.getParameter("appointment_number");
+                String dentistName = req.getParameter("dentist_name");
+                String treatmentIdStr = req.getParameter("treatment_id");
+                String appointmentDateStr = req.getParameter("appointment_date");
+                String appointmentTimeStr = req.getParameter("appointment_time");
+                String status = req.getParameter("status");
+
+                if (apptNum != null && dentistName != null && treatmentIdStr != null && appointmentDateStr != null && appointmentTimeStr != null) {
+                    int treatmentId = Integer.parseInt(treatmentIdStr.trim());
+                    Date appointmentDate = Date.valueOf(appointmentDateStr.trim());
+                    String timeVal = appointmentTimeStr.trim();
+                    if (timeVal.length() == 5) timeVal += ":00";
+                    Time appointmentTime = Time.valueOf(timeVal);
+
+                    Appointment app = new Appointment();
+                    app.setAppointmentNumber(apptNum.trim());
+                    app.setDentistName(dentistName.trim());
+                    app.setTreatmentId(treatmentId);
+                    app.setAppointmentDate(appointmentDate);
+                    app.setAppointmentTime(appointmentTime);
+                    app.setStatus(status != null ? status.trim() : "Scheduled");
+
+                    boolean updated = appointmentDAO.updateAppointmentDetails(app);
+                    if (updated) {
+                        session.setAttribute("flashSuccess", "Appointment " + apptNum + " updated successfully!");
+                    } else {
+                        session.setAttribute("flashError", "Failed to update appointment details.");
+                    }
+                }
+            } catch (Exception e) {
+                session.setAttribute("flashError", "Error updating appointment: " + e.getMessage());
+            }
+            resp.sendRedirect(req.getContextPath() + "/dashboard?tab=tab-search&search_appt_num=" + req.getParameter("appointment_number"));
+            return;
+        }
 
         try {
-            String patientName = req.getParameter("patient_name");
-            String address = req.getParameter("address");
-            String contactNumber = req.getParameter("contact_number");
+            String nicInput = req.getParameter("search_patient_nic");
             String dentistName = req.getParameter("dentist_name");
             String treatmentIdStr = req.getParameter("treatment_id");
-            String dateStr = req.getParameter("appointment_date");
-            String timeStr = req.getParameter("appointment_time");
+            String appointmentDateStr = req.getParameter("appointment_date");
+            String appointmentTimeStr = req.getParameter("appointment_time");
 
-            if (patientName == null) {
-                AppointmentRequest requestApp = gson.fromJson(req.getReader(), AppointmentRequest.class);
-                if (requestApp != null) {
-                    patientName = requestApp.patientName;
-                    address = requestApp.address;
-                    contactNumber = requestApp.contactNumber;
-                    dentistName = requestApp.dentistName;
-                    treatmentIdStr = requestApp.treatmentId;
-                    dateStr = requestApp.appointmentDate;
-                    timeStr = requestApp.appointmentTime;
-                }
-            }
-
-            if (patientName == null || patientName.trim().isEmpty() ||
-                contactNumber == null || contactNumber.trim().isEmpty() ||
-                dentistName == null || dentistName.trim().isEmpty() ||
-                treatmentIdStr == null || dateStr == null || timeStr == null) {
-                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                resp.getWriter().write("{\"error\": \"Missing required fields\"}");
+            if (nicInput == null || nicInput.trim().isEmpty()) {
+                session.setAttribute("flashError", "Please enter the Patient's NIC or Passport number.");
+                resp.sendRedirect(req.getContextPath() + "/dashboard?tab=tab-register");
                 return;
             }
 
-            int treatmentId = Integer.parseInt(treatmentIdStr);
-            Date appointmentDate = Date.valueOf(dateStr);
-            
-            if (timeStr.length() == 5) {
-                timeStr += ":00";
+            Patient patient = patientDAO.getPatientByNic(nicInput.trim());
+            if (patient == null) {
+                session.setAttribute("flashError", "Cannot schedule appointment! No registered patient found with NIC/Passport \"" + nicInput.trim() + "\". Please register the patient under Patient Registration first.");
+                resp.sendRedirect(req.getContextPath() + "/dashboard?tab=tab-register");
+                return;
             }
-            Time appointmentTime = Time.valueOf(timeStr);
 
-            String appointmentNumber = "APT-" + (10000 + new Random().nextInt(90000));
+            if (dentistName == null || dentistName.trim().isEmpty() ||
+                treatmentIdStr == null || treatmentIdStr.trim().isEmpty() ||
+                appointmentDateStr == null || appointmentDateStr.trim().isEmpty() ||
+                appointmentTimeStr == null || appointmentTimeStr.trim().isEmpty()) {
+                session.setAttribute("flashError", "All appointment fields are required.");
+                resp.sendRedirect(req.getContextPath() + "/dashboard?tab=tab-register");
+                return;
+            }
 
-            Appointment app = new Appointment();
-            app.setAppointmentNumber(appointmentNumber);
-            app.setPatientName(patientName.trim());
-            app.setAddress(address != null ? address.trim() : "");
-            app.setContactNumber(contactNumber.trim());
-            app.setDentistName(dentistName.trim());
-            app.setTreatmentId(treatmentId);
-            app.setAppointmentDate(appointmentDate);
-            app.setAppointmentTime(appointmentTime);
+            int treatmentId = Integer.parseInt(treatmentIdStr.trim());
+            Date appointmentDate = Date.valueOf(appointmentDateStr.trim());
 
-            boolean success = appointmentDAO.createAppointment(app);
+            String timeVal = appointmentTimeStr.trim();
+            if (timeVal.length() == 5) timeVal += ":00";
+            Time appointmentTime = Time.valueOf(timeVal);
+
+            // Generate unique appointment number
+            String apptNum = "APPT-" + (1000 + random.nextInt(9000));
+
+            Appointment appointment = new Appointment();
+            appointment.setAppointmentNumber(apptNum);
+            appointment.setPatientName(patient.getPatientName());
+            appointment.setContactNumber(patient.getPhoneNumber());
+            appointment.setAddress(patient.getAddress());
+            appointment.setDentistName(dentistName.trim());
+            appointment.setTreatmentId(treatmentId);
+            appointment.setAppointmentDate(appointmentDate);
+            appointment.setAppointmentTime(appointmentTime);
+
+            boolean success = appointmentDAO.createAppointment(appointment);
+
             if (success) {
-                Appointment saved = appointmentDAO.getAppointmentByNumber(appointmentNumber);
-                resp.getWriter().write(gson.toJson(saved));
+                session.setAttribute("flashSuccess", "Appointment registered successfully! Appointment Number: " + appointment.getAppointmentNumber());
             } else {
-                resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-                resp.getWriter().write("{\"error\": \"Failed to register appointment in database\"}");
+                session.setAttribute("flashError", "Failed to register appointment.");
             }
 
-        } catch (IllegalArgumentException e) {
-            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().write("{\"error\": \"Invalid date or time format. Use YYYY-MM-DD and HH:MM\"}");
         } catch (Exception e) {
             e.printStackTrace();
-            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            resp.getWriter().write("{\"error\": \"An unexpected error occurred: " + e.getMessage() + "\"}");
+            session.setAttribute("flashError", "Error creating appointment: " + e.getMessage());
         }
+
+        resp.sendRedirect(req.getContextPath() + "/dashboard?tab=tab-register");
     }
 
-    private static class AppointmentRequest {
-        String patientName;
-        String address;
-        String contactNumber;
-        String dentistName;
-        String treatmentId;
-        String appointmentDate;
-        String appointmentTime;
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String action = req.getParameter("action");
+        String appNum = req.getParameter("appointment_number");
+        String status = req.getParameter("status");
+        HttpSession session = req.getSession(false);
+
+        if ("updateStatus".equalsIgnoreCase(action) && appNum != null && status != null && session != null) {
+            boolean updated = appointmentDAO.updateAppointmentStatus(appNum.trim(), status.trim());
+            if (updated) {
+                session.setAttribute("flashSuccess", "Appointment status updated to " + status);
+            } else {
+                session.setAttribute("flashError", "Failed to update appointment status.");
+            }
+            resp.sendRedirect(req.getContextPath() + "/dashboard?tab=tab-search&search_appt_num=" + appNum.trim());
+            return;
+        }
+
+        resp.sendRedirect(req.getContextPath() + "/dashboard?tab=tab-register");
     }
 }

@@ -9,4 +9,6 @@ public interface AppointmentDAO {
     Appointment getAppointmentByNumber(String appointmentNumber);
     List<Appointment> getAllAppointments();
     List<Map<String, Object>> getDentistStatistics();
+    boolean updateAppointmentStatus(String appointmentNumber, String status);
+    boolean updateAppointmentDetails(Appointment app);
 }

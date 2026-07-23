@@ -20,12 +20,14 @@ public class AuthFilter implements Filter {
         
         String path = httpRequest.getRequestURI().substring(httpRequest.getContextPath().length());
 
-        // Allow access to login page, static files, and login API
+        // Allow access to login page, login.html, login action, and static assets
         if (path.equals("/login") || 
+            path.equals("/login.html") || 
             path.equals("/login.jsp") || 
+            path.equals("/login-action") || 
             path.startsWith("/css/") || 
             path.startsWith("/js/") || 
-            path.startsWith("/api/auth")) {
+            path.startsWith("/images/")) {
             chain.doFilter(request, response);
             return;
         }
@@ -36,14 +38,7 @@ public class AuthFilter implements Filter {
         if (isLoggedIn) {
             chain.doFilter(request, response);
         } else {
-            // For API endpoints, return 401 unauthorized. For pages, redirect to login page.
-            if (path.startsWith("/api/")) {
-                httpResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                httpResponse.setContentType("application/json");
-                httpResponse.getWriter().write("{\"error\": \"Unauthorized. Please log in.\"}");
-            } else {
-                httpResponse.sendRedirect(httpRequest.getContextPath() + "/login");
-            }
+            httpResponse.sendRedirect(httpRequest.getContextPath() + "/login");
         }
     }
 

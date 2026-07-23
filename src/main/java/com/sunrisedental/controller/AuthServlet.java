@@ -1,7 +1,7 @@
 package com.sunrisedental.controller;
 
-import com.google.gson.Gson;
 import com.sunrisedental.dao.UserDAO;
+import com.sunrisedental.dao.impl.UserDAOImpl;
 import com.sunrisedental.model.User;
 
 import javax.servlet.ServletException;
@@ -12,75 +12,47 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 
-@WebServlet("/api/auth/*")
+@WebServlet(urlPatterns = {"/login-action", "/logout"})
 public class AuthServlet extends HttpServlet {
-    private final UserDAO userDAO = new com.sunrisedental.dao.impl.UserDAOImpl();
-    private final Gson gson = new Gson();
+    private final UserDAO userDAO = new UserDAOImpl();
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        String pathInfo = req.getPathInfo();
-        resp.setContentType("application/json");
-        resp.setCharacterEncoding("UTF-8");
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String path = req.getServletPath();
 
-        if ("/user".equals(pathInfo)) {
-            HttpSession session = req.getSession(false);
-            if (session != null && session.getAttribute("user") != null) {
-                User user = (User) session.getAttribute("user");
-                resp.getWriter().write(gson.toJson(user));
-            } else {
-                resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                resp.getWriter().write("{\"error\": \"Not authenticated\"}");
+        if ("/login-action".equals(path)) {
+            String username = req.getParameter("username");
+            String password = req.getParameter("password");
+
+            if (username == null || username.trim().isEmpty() || password == null || password.trim().isEmpty()) {
+                req.setAttribute("error", "Username and password are required.");
+                req.getRequestDispatcher("/login.jsp").forward(req, resp);
+                return;
             }
-        } else {
-            resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            resp.getWriter().write("{\"error\": \"Resource not found\"}");
+
+            User user = userDAO.authenticate(username.trim(), password);
+
+            if (user != null) {
+                HttpSession session = req.getSession(true);
+                session.setAttribute("user", user);
+                resp.sendRedirect(req.getContextPath() + "/dashboard");
+            } else {
+                req.setAttribute("error", "Invalid username or password.");
+                req.getRequestDispatcher("/login.jsp").forward(req, resp);
+            }
         }
     }
 
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        String pathInfo = req.getPathInfo();
-        resp.setContentType("application/json");
-        resp.setCharacterEncoding("UTF-8");
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String path = req.getServletPath();
 
-        if ("/login".equals(pathInfo)) {
-            String username = req.getParameter("username");
-            String password = req.getParameter("password");
-
-            if (username == null || password == null) {
-                try {
-                    LoginRequest body = gson.fromJson(req.getReader(), LoginRequest.class);
-                    if (body != null) {
-                        username = body.username;
-                        password = body.password;
-                    }
-                } catch (Exception ignored) {}
-            }
-
-            User user = userDAO.authenticate(username, password);
-            if (user != null) {
-                HttpSession session = req.getSession(true);
-                session.setAttribute("user", user);
-                resp.getWriter().write(gson.toJson(user));
-            } else {
-                resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                resp.getWriter().write("{\"error\": \"Invalid username or password\"}");
-            }
-        } else if ("/logout".equals(pathInfo)) {
+        if ("/logout".equals(path)) {
             HttpSession session = req.getSession(false);
             if (session != null) {
                 session.invalidate();
             }
-            resp.getWriter().write("{\"message\": \"Logged out successfully\"}");
-        } else {
-            resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            resp.getWriter().write("{\"error\": \"Resource not found\"}");
+            resp.sendRedirect(req.getContextPath() + "/login");
         }
-    }
-
-    private static class LoginRequest {
-        String username;
-        String password;
     }
 }

@@ -15,7 +15,7 @@ import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.List;
 
-@WebServlet(urlPatterns = {"/api/dentists", "/api/dentists/*"})
+@WebServlet(urlPatterns = {"/dentists", "/api/dentists", "/api/dentists/*"})
 public class DentistServlet extends HttpServlet {
     private final DentistDAO dentistDAO = new DentistDAOImpl();
     private final Gson gson = new Gson();
@@ -31,21 +31,38 @@ public class DentistServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String action = req.getParameter("action");
+        String idStr = req.getParameter("id");
+        HttpSession session = req.getSession(false);
+
+        if ("delete".equalsIgnoreCase(action) && idStr != null && !idStr.trim().isEmpty() && isAdmin(req)) {
+            try {
+                int id = Integer.parseInt(idStr.trim());
+                boolean deleted = dentistDAO.deleteDentist(id);
+                if (deleted && session != null) {
+                    session.setAttribute("flashSuccess", "Dentist profile deleted successfully.");
+                } else if (session != null) {
+                    session.setAttribute("flashError", "Failed to delete dentist profile.");
+                }
+            } catch (Exception e) {
+                if (session != null) session.setAttribute("flashError", "Error deleting dentist: " + e.getMessage());
+            }
+            resp.sendRedirect(req.getContextPath() + "/dashboard?tab=tab-dentists");
+            return;
+        }
+
         resp.setContentType("application/json");
         resp.setCharacterEncoding("UTF-8");
-
         List<Dentist> list = dentistDAO.getAllDentists();
         resp.getWriter().write(gson.toJson(list));
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        resp.setContentType("application/json");
-        resp.setCharacterEncoding("UTF-8");
-
+        HttpSession session = req.getSession(false);
         if (!isAdmin(req)) {
-            resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            resp.getWriter().write("{\"error\": \"Only administrators can manage dentist records.\"}");
+            if (session != null) session.setAttribute("flashError", "Only administrators can manage dentist records.");
+            resp.sendRedirect(req.getContextPath() + "/dashboard?tab=tab-dentists");
             return;
         }
 
@@ -56,39 +73,24 @@ public class DentistServlet extends HttpServlet {
             String contactNumber = req.getParameter("contact_number");
             String action = req.getParameter("action");
 
-            if (dentistName == null || specialization == null) {
-                try {
-                    DentistRequest body = gson.fromJson(req.getReader(), DentistRequest.class);
-                    if (body != null) {
-                        if (body.id != null) idStr = body.id;
-                        if (body.dentist_name != null) dentistName = body.dentist_name;
-                        if (body.dentistName != null) dentistName = body.dentistName;
-                        if (body.specialization != null) specialization = body.specialization;
-                        if (body.contact_number != null) contactNumber = body.contact_number;
-                        if (body.contactNumber != null) contactNumber = body.contactNumber;
-                        if (body.action != null) action = body.action;
-                    }
-                } catch (Exception ignored) {}
-            }
-
-            if ("delete".equalsIgnoreCase(action) || "DELETE".equals(req.getMethod())) {
+            if ("delete".equalsIgnoreCase(action)) {
                 if (idStr != null && !idStr.trim().isEmpty()) {
                     int id = Integer.parseInt(idStr.trim());
                     boolean deleted = dentistDAO.deleteDentist(id);
-                    if (deleted) {
-                        resp.getWriter().write("{\"message\": \"Dentist deleted successfully\"}");
-                    } else {
-                        resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-                        resp.getWriter().write("{\"error\": \"Failed to delete dentist record\"}");
+                    if (deleted && session != null) {
+                        session.setAttribute("flashSuccess", "Dentist profile deleted successfully.");
+                    } else if (session != null) {
+                        session.setAttribute("flashError", "Failed to delete dentist record.");
                     }
-                    return;
                 }
+                resp.sendRedirect(req.getContextPath() + "/dashboard?tab=tab-dentists");
+                return;
             }
 
             if (dentistName == null || dentistName.trim().isEmpty() ||
                 specialization == null || specialization.trim().isEmpty()) {
-                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                resp.getWriter().write("{\"error\": \"Dentist Name and Specialization are required.\"}");
+                if (session != null) session.setAttribute("flashError", "Dentist Name and Specialization are required.");
+                resp.sendRedirect(req.getContextPath() + "/dashboard?tab=tab-dentists");
                 return;
             }
 
@@ -107,32 +109,17 @@ public class DentistServlet extends HttpServlet {
                 success = dentistDAO.createDentist(d);
             }
 
-            if (success) {
-                resp.getWriter().write("{\"message\": \"" + (isUpdate ? "Dentist updated successfully" : "Dentist registered successfully") + "\"}");
-            } else {
-                resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-                resp.getWriter().write("{\"error\": \"" + (isUpdate ? "Failed to update dentist record" : "Failed to register dentist") + "\"}");
+            if (success && session != null) {
+                session.setAttribute("flashSuccess", isUpdate ? "Dentist profile updated successfully!" : "Dentist registered successfully!");
+            } else if (session != null) {
+                session.setAttribute("flashError", isUpdate ? "Failed to update dentist record." : "Failed to register dentist.");
             }
 
         } catch (Exception e) {
             e.printStackTrace();
-            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            resp.getWriter().write("{\"error\": \"An error occurred: " + e.getMessage() + "\"}");
+            if (session != null) session.setAttribute("flashError", "Error: " + e.getMessage());
         }
-    }
 
-    @Override
-    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        doPost(req, resp);
-    }
-
-    private static class DentistRequest {
-        String id;
-        String dentist_name;
-        String dentistName;
-        String specialization;
-        String contact_number;
-        String contactNumber;
-        String action;
+        resp.sendRedirect(req.getContextPath() + "/dashboard?tab=tab-dentists");
     }
 }
