@@ -46,6 +46,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Sunrise Dental Management (MVC)</title>
     <link rel="stylesheet" href="css/style.css?v=8">
+    <style>
+        .highlight-row { background: rgba(56, 189, 248, 0.15) !important; }
+    </style>
 </head>
 <body class="dashboard-body">
 
@@ -450,7 +453,7 @@
                                 <% if (appointments != null && !appointments.isEmpty()) { for (Appointment a : appointments) {
                                     boolean isSelected = (searchedAppointment != null && a.getAppointmentNumber().equals(searchedAppointment.getAppointmentNumber()));
                                 %>
-                                    <tr style="<%= isSelected ? "background: rgba(56, 189, 248, 0.15);" : "" %>">
+                                    <tr class="<%= isSelected ? "highlight-row" : "" %>">
                                         <td><strong><%= a.getAppointmentNumber() %></strong></td>
                                         <td><%= a.getPatientName() %></td>
                                         <td><%= a.getContactNumber() %></td>
