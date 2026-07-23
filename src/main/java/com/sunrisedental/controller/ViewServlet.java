@@ -77,6 +77,17 @@ public class ViewServlet extends HttpServlet {
                 }
             }
 
+            // Handle appointment number lookup for billing tab
+            String billApptNum = req.getParameter("bill_appt_num");
+            if (billApptNum != null && !billApptNum.trim().isEmpty()) {
+                Appointment matchedBillAppt = appointmentDAO.getAppointmentByNumber(billApptNum.trim());
+                if (matchedBillAppt != null) {
+                    req.setAttribute("selectedBillAppt", matchedBillAppt);
+                } else {
+                    req.setAttribute("billApptError", "❌ No appointment record found for Appointment Number \"" + billApptNum.trim() + "\".");
+                }
+            }
+
             // Flash messages from session
             if (session.getAttribute("flashSuccess") != null) {
                 req.setAttribute("flashSuccess", session.getAttribute("flashSuccess"));

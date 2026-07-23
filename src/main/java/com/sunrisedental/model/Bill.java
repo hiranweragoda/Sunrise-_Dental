@@ -11,6 +11,11 @@ public class Bill {
     private Timestamp billDate;
     private String paymentStatus;
 
+    // Payment details
+    private String paymentMethod; // "Cash" or "Card"
+    private BigDecimal cashGiven;
+    private BigDecimal balanceReturned;
+
     // Optional join fields for receipt formatting
     private String patientName;
     private String dentistName;
@@ -40,6 +45,15 @@ public class Bill {
 
     public String getPaymentStatus() { return paymentStatus; }
     public void setPaymentStatus(String paymentStatus) { this.paymentStatus = paymentStatus; }
+
+    public String getPaymentMethod() { return paymentMethod != null ? paymentMethod : "Cash"; }
+    public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
+
+    public BigDecimal getCashGiven() { return cashGiven; }
+    public void setCashGiven(BigDecimal cashGiven) { this.cashGiven = cashGiven; }
+
+    public BigDecimal getBalanceReturned() { return balanceReturned; }
+    public void setBalanceReturned(BigDecimal balanceReturned) { this.balanceReturned = balanceReturned; }
 
     public String getPatientName() { return patientName; }
     public void setPatientName(String patientName) { this.patientName = patientName; }

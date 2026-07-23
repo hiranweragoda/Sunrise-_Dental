@@ -33,6 +33,10 @@
     String searchError = (String) request.getAttribute("searchError");
     String enteredApptNum = request.getParameter("search_appt_num");
 
+    Appointment selectedBillAppt = (Appointment) request.getAttribute("selectedBillAppt");
+    String billApptError = (String) request.getAttribute("billApptError");
+    String enteredBillApptNum = request.getParameter("bill_appt_num");
+
     String flashSuccess = (String) request.getAttribute("flashSuccess");
     String flashError = (String) request.getAttribute("flashError");
     
@@ -481,26 +485,213 @@
                 <div class="panel">
                     <div class="panel-header">
                         <h2 class="panel-title">Calculate & Print Bill</h2>
-                        <p class="panel-subtitle">Generate official payment receipt</p>
+                        <p class="panel-subtitle">Select a patient appointment to view details, add consultation fee, and issue payment receipt</p>
                     </div>
 
-                    <form action="bills" method="POST">
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label for="bill-appointment-number">Appointment Number</label>
-                                <input type="text" id="bill-appointment-number" name="appointment_number" placeholder="e.g. APPT-1001" required>
+                    <!-- Search Form by Appointment Number -->
+                    <form action="dashboard" method="GET" style="margin-bottom: 2rem;">
+                        <input type="hidden" name="tab" value="tab-billing">
+                        <div class="form-group full-width">
+                            <label for="bill_appt_num">Lookup Appointment for Billing <span style="font-weight: normal; font-size: 0.8rem; color: #38bdf8;">(Enter Appointment # e.g. APPT-1001 or select from directory table below)</span></label>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="text" id="bill_appt_num" name="bill_appt_num" value="<%= enteredBillApptNum != null ? enteredBillApptNum : "" %>" placeholder="e.g. APPT-1001" required style="flex: 1;">
+                                <button type="submit" class="btn btn-primary">Lookup Appointment</button>
                             </div>
-
-                            <div class="form-group">
-                                <label for="consultation_fee">Doctor Consultation Fee (LKR)</label>
-                                <input type="number" step="0.01" id="consultation_fee" name="consultation_fee" placeholder="e.g. 1500.00" required>
-                            </div>
-                        </div>
-
-                        <div class="form-actions" style="margin-top: 1.5rem;">
-                            <button type="submit" class="btn btn-primary">Generate Payment Receipt</button>
+                            <% if (billApptError != null) { %>
+                                <small style="display: block; margin-top: 6px; font-size: 0.85rem; font-weight: 500; color: #f87171;"><%= billApptError %></small>
+                            <% } %>
                         </div>
                     </form>
+
+                    <!-- Selected Appointment Details & Fee Form Card -->
+                    <% if (selectedBillAppt != null) {
+                        boolean isPaid = "Paid".equalsIgnoreCase(selectedBillAppt.getPaymentStatus());
+                    %>
+                        <div style="background: rgba(15, 23, 42, 0.85); border: 2px solid #38bdf8; padding: 1.5rem; border-radius: 16px; margin-bottom: 2rem; box-shadow: 0 8px 20px rgba(56, 189, 248, 0.15);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 1rem; margin-bottom: 1rem;">
+                                <div>
+                                    <h3 style="margin: 0; font-size: 1.3rem; color: #38bdf8;">Appointment Billing Details (<%= selectedBillAppt.getAppointmentNumber() %>)</h3>
+                                    <p style="margin: 4px 0 0 0; color: var(--text-muted); font-size: 0.85rem;">Patient details & Consultation Fee calculator</p>
+                                </div>
+                                <div>
+                                    <% if (isPaid) { %>
+                                        <span class="status-pill status-completed" style="font-size: 0.95rem; padding: 6px 14px; background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.4);">✓ Paid</span>
+                                    <% } else { %>
+                                        <span class="status-pill status-scheduled" style="font-size: 0.95rem; padding: 6px 14px; background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4);">⚠️ Unpaid</span>
+                                    <% } %>
+                                </div>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem;">
+                                <div>
+                                    <strong style="color: var(--text-muted); font-size: 0.8rem; display: block;">PATIENT NAME</strong>
+                                    <span style="font-weight: 600; font-size: 1.1rem; color: #fff;"><%= selectedBillAppt.getPatientName() %></span>
+                                </div>
+                                <div>
+                                    <strong style="color: var(--text-muted); font-size: 0.8rem; display: block;">CONTACT PHONE</strong>
+                                    <span style="font-weight: 600; font-size: 1.1rem; color: #fff;"><%= selectedBillAppt.getContactNumber() %></span>
+                                </div>
+                                <div>
+                                    <strong style="color: var(--text-muted); font-size: 0.8rem; display: block;">RESIDENTIAL ADDRESS</strong>
+                                    <span style="font-weight: 500; color: #e2e8f0;"><%= selectedBillAppt.getAddress() != null ? selectedBillAppt.getAddress() : "-" %></span>
+                                </div>
+                                <div>
+                                    <strong style="color: var(--text-muted); font-size: 0.8rem; display: block;">CONSULTING DENTIST</strong>
+                                    <span style="font-weight: 600; font-size: 1.05rem; color: #38bdf8;"><%= selectedBillAppt.getDentistName() %></span>
+                                </div>
+                                <div>
+                                    <strong style="color: var(--text-muted); font-size: 0.8rem; display: block;">TREATMENT SERVICE</strong>
+                                    <span style="font-weight: 600; font-size: 1.05rem; color: #4ade80;"><%= selectedBillAppt.getTreatmentName() %></span>
+                                </div>
+                                <div>
+                                    <strong style="color: var(--text-muted); font-size: 0.8rem; display: block;">TREATMENT PACKAGE PRICE</strong>
+                                    <span style="font-weight: 600; font-size: 1.05rem; color: #facc15;">LKR <%= String.format("%,.2f", selectedBillAppt.getTreatmentCost()) %></span>
+                                </div>
+                                <div>
+                                    <strong style="color: var(--text-muted); font-size: 0.8rem; display: block;">SCHEDULED DATE & TIME</strong>
+                                    <span style="font-weight: 600; color: #fff;"><%= selectedBillAppt.getAppointmentDate() %> @ <%= selectedBillAppt.getAppointmentTime() %></span>
+                                </div>
+                            </div>
+
+                            <!-- Payment Entry Form -->
+                            <form action="bills" method="POST" style="border-top: 1px dashed #334155; padding-top: 1.25rem; margin-top: 1rem;">
+                                <input type="hidden" name="appointment_number" value="<%= selectedBillAppt.getAppointmentNumber() %>">
+                                <input type="hidden" id="treatment_cost_val" value="<%= selectedBillAppt.getTreatmentCost() %>">
+                                <input type="hidden" id="balance_returned" name="balance_returned" value="0.00">
+
+                                <div class="form-grid">
+                                    <div class="form-group full-width">
+                                        <label for="consultation_fee">Doctor Consultation Fee (LKR) <span style="color: #f87171;">*</span></label>
+                                        <input type="number" step="0.01" id="consultation_fee" name="consultation_fee" placeholder="Enter doctor consultation fee (e.g. 1500.00)" required autofocus oninput="calculateCashBalance()" style="font-size: 1.1rem; padding: 12px;">
+                                    </div>
+
+                                    <div class="form-group full-width">
+                                        <label style="display: block; margin-bottom: 8px;">Select Payment Method <span style="color: #f87171;">*</span></label>
+                                        <div style="display: flex; gap: 20px; background: rgba(0,0,0,0.3); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--card-border);">
+                                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; color: #38bdf8;">
+                                                <input type="radio" id="method-cash" name="payment_method" value="Cash" checked onclick="switchPaymentMethod('Cash')">
+                                                💵 Cash Payment
+                                            </label>
+                                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; color: #c084fc;">
+                                                <input type="radio" id="method-card" name="payment_method" value="Card" onclick="switchPaymentMethod('Card')">
+                                                💳 Credit / Debit Card
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Total Bill Summary Box -->
+                                <div style="background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); padding: 1rem; border-radius: 10px; margin-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        <span style="color: var(--text-muted); font-size: 0.85rem; display: block;">ESTIMATED TOTAL BILL (Treatment + Consultation)</span>
+                                        <span style="font-size: 1.3rem; font-weight: 700; color: #38bdf8;">LKR <span id="calc_total_cost"><%= String.format("%,.2f", selectedBillAppt.getTreatmentCost()) %></span></span>
+                                    </div>
+                                </div>
+
+                                <!-- CASH PAYMENT SECTION -->
+                                <div id="cash-payment-section" style="margin-top: 1.25rem; background: rgba(0,0,0,0.25); padding: 1.25rem; border-radius: 12px; border: 1px solid var(--card-border);">
+                                    <h4 style="margin: 0 0 1rem 0; color: #38bdf8;">💵 Cash Payment & Balance Calculator</h4>
+                                    <div class="form-grid">
+                                        <div class="form-group">
+                                            <label for="cash_given">Cash Given by Patient (LKR) <span style="color: #f87171;">*</span></label>
+                                            <input type="number" step="0.01" id="cash_given" name="cash_given" placeholder="e.g. 10000.00" oninput="calculateCashBalance()" style="font-size: 1.05rem;">
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label>Balance Change to Return to Patient</label>
+                                            <div style="background: rgba(0,0,0,0.4); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--card-border); font-size: 1.2rem; font-weight: 700;">
+                                                <span id="calc_balance" style="color: #4ade80;">LKR 0.00</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <small id="cash_error_msg" style="display: none; color: #f87171; font-weight: 600; margin-top: 6px;"></small>
+                                </div>
+
+                                <!-- CARD PAYMENT SECTION -->
+                                <div id="card-payment-section" style="display: none; margin-top: 1.25rem; background: rgba(0,0,0,0.25); padding: 1.25rem; border-radius: 12px; border: 1px solid var(--card-border);">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                        <h4 style="margin: 0; color: #c084fc;">💳 Credit / Debit Card Processing</h4>
+                                        <span style="font-size: 0.75rem; background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 12px; color: #94a3b8;">🔒 Card details are client-processed and NOT saved in database</span>
+                                    </div>
+                                    
+                                    <div class="form-grid">
+                                        <div class="form-group full-width">
+                                            <label>Cardholder Name</label>
+                                            <input type="text" placeholder="Name on card e.g. M N PERERA" style="font-size: 1rem;">
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label>Card Number</label>
+                                            <input type="text" placeholder="1234 5678 9101 1121" maxlength="19" oninput="formatCardNumber(this)" style="font-size: 1rem; font-family: monospace;">
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label>Expiration Date (MM/YY)</label>
+                                            <input type="text" placeholder="MM/YY" maxlength="5" oninput="formatCardExpiry(this)" style="font-size: 1rem; font-family: monospace;">
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label>CVV / CVC Code</label>
+                                            <input type="password" placeholder="123" maxlength="4" style="font-size: 1rem; font-family: monospace;">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-actions" style="margin-top: 1.5rem; display: flex; gap: 10px; flex-wrap: wrap;">
+                                    <button type="submit" id="btn-submit-payment" class="btn btn-primary" style="background: #22c55e; border-color: #22c55e; font-weight: 700; font-size: 1rem; padding: 10px 20px;">💳 Generate Payment Receipt & Mark as Paid</button>
+                                    <a href="dashboard?tab=tab-billing" class="btn btn-secondary">Select Another Patient</a>
+                                </div>
+                            </form>
+                        </div>
+                    <% } %>
+
+                    <!-- Appointments Billing Directory Table -->
+                    <div style="margin-top: 1.5rem;">
+                        <h3 style="margin-bottom: 1rem; color: var(--color-primary);">Appointments Billing Directory</h3>
+                        <div style="overflow-x: auto; background: rgba(0, 0, 0, 0.2); border-radius: 12px; border: 1px solid var(--card-border);">
+                            <table class="report-table">
+                                <thead>
+                                    <tr>
+                                        <th>Appt #</th>
+                                        <th>Patient Name</th>
+                                        <th>Contact</th>
+                                        <th>Dentist</th>
+                                        <th>Treatment</th>
+                                        <th>Price</th>
+                                        <th>Payment Status</th>
+                                        <th style="text-align: right;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% if (appointments != null && !appointments.isEmpty()) { for (Appointment a : appointments) {
+                                        boolean isSel = (selectedBillAppt != null && a.getAppointmentNumber().equals(selectedBillAppt.getAppointmentNumber()));
+                                        boolean aPaid = "Paid".equalsIgnoreCase(a.getPaymentStatus());
+                                    %>
+                                        <tr class="<%= isSel ? "highlight-row" : "" %>">
+                                            <td><strong><%= a.getAppointmentNumber() %></strong></td>
+                                            <td style="font-weight: 600;"><%= a.getPatientName() %></td>
+                                            <td><%= a.getContactNumber() %></td>
+                                            <td><%= a.getDentistName() %></td>
+                                            <td><%= a.getTreatmentName() %></td>
+                                            <td>LKR <%= String.format("%,.2f", a.getTreatmentCost()) %></td>
+                                            <td>
+                                                <% if (aPaid) { %>
+                                                    <span class="status-pill status-completed" style="background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.4);">✓ Paid</span>
+                                                <% } else { %>
+                                                    <span class="status-pill status-scheduled" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4);">⚠️ Unpaid</span>
+                                                <% } %>
+                                            </td>
+                                            <td style="text-align: right;">
+                                                <a href="dashboard?tab=tab-billing&bill_appt_num=<%= a.getAppointmentNumber() %>" class="btn btn-primary" style="padding: 6px 14px; font-size: 0.85rem; background: linear-gradient(135deg, #06b6d4, #3b82f6);">Calculate & Bill</a>
+                                            </td>
+                                        </tr>
+                                    <% } } else { %>
+                                        <tr><td colspan="8" style="text-align: center; color: var(--text-muted);">No appointments found.</td></tr>
+                                    <% } %>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </section>
 

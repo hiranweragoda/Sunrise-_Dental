@@ -41,8 +41,9 @@ public class AppointmentDAOImpl implements AppointmentDAO {
 
     @Override
     public Appointment getAppointmentByNumber(String appointmentNumber) {
-        String sql = "SELECT a.*, t.treatment_name, t.cost FROM appointments a " +
+        String sql = "SELECT a.*, t.treatment_name, t.cost, b.payment_status FROM appointments a " +
                      "JOIN treatments t ON a.treatment_id = t.id " +
+                     "LEFT JOIN bills b ON a.appointment_number = b.appointment_number " +
                      "WHERE a.appointment_number = ?";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -60,6 +61,7 @@ public class AppointmentDAOImpl implements AppointmentDAO {
                     app.setAppointmentDate(rs.getDate("appointment_date"));
                     app.setAppointmentTime(rs.getTime("appointment_time"));
                     app.setStatus(rs.getString("status"));
+                    app.setPaymentStatus(rs.getString("payment_status"));
                     app.setTreatmentName(rs.getString("treatment_name"));
                     app.setTreatmentCost(rs.getBigDecimal("cost"));
                     return app;
@@ -74,8 +76,9 @@ public class AppointmentDAOImpl implements AppointmentDAO {
     @Override
     public List<Appointment> getAllAppointments() {
         List<Appointment> list = new ArrayList<>();
-        String sql = "SELECT a.*, t.treatment_name, t.cost FROM appointments a " +
+        String sql = "SELECT a.*, t.treatment_name, t.cost, b.payment_status FROM appointments a " +
                      "JOIN treatments t ON a.treatment_id = t.id " +
+                     "LEFT JOIN bills b ON a.appointment_number = b.appointment_number " +
                      "ORDER BY a.appointment_date DESC, a.appointment_time DESC";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
@@ -92,6 +95,7 @@ public class AppointmentDAOImpl implements AppointmentDAO {
                 app.setAppointmentDate(rs.getDate("appointment_date"));
                 app.setAppointmentTime(rs.getTime("appointment_time"));
                 app.setStatus(rs.getString("status"));
+                app.setPaymentStatus(rs.getString("payment_status"));
                 app.setTreatmentName(rs.getString("treatment_name"));
                 app.setTreatmentCost(rs.getBigDecimal("cost"));
                 list.add(app);

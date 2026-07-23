@@ -14,6 +14,7 @@ public class Appointment {
     private Date appointmentDate;
     private Time appointmentTime;
     private String status;
+    private String paymentStatus;
 
     // Optional fields for easy display join
     private String treatmentName;
@@ -47,6 +48,9 @@ public class Appointment {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public String getPaymentStatus() { return paymentStatus != null ? paymentStatus : "Unpaid"; }
+    public void setPaymentStatus(String paymentStatus) { this.paymentStatus = paymentStatus; }
 
     public String getTreatmentName() { return treatmentName; }
     public void setTreatmentName(String treatmentName) { this.treatmentName = treatmentName; }

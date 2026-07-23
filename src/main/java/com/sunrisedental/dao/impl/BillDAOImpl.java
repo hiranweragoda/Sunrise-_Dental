@@ -17,8 +17,36 @@ import java.util.Map;
 
 public class BillDAOImpl implements BillDAO {
 
+    public BillDAOImpl() {
+        createPaymentsTableIfNotExists();
+    }
+
+    private void createPaymentsTableIfNotExists() {
+        String createSql = "CREATE TABLE IF NOT EXISTS payments (" +
+                "payment_id INT AUTO_INCREMENT PRIMARY KEY, " +
+                "bill_id INT, " +
+                "appointment_number VARCHAR(50) NOT NULL, " +
+                "payment_method VARCHAR(20) NOT NULL, " +
+                "total_amount DECIMAL(10,2) NOT NULL, " +
+                "cash_given DECIMAL(10,2), " +
+                "balance_returned DECIMAL(10,2), " +
+                "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP" +
+                ")";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(createSql)) {
+            ps.executeUpdate();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     @Override
     public Bill generateBill(String appointmentNumber, BigDecimal consultationFee) {
+        return generateBill(appointmentNumber, consultationFee, "Cash", null, null);
+    }
+
+    @Override
+    public Bill generateBill(String appointmentNumber, BigDecimal consultationFee, String paymentMethod, BigDecimal cashGiven, BigDecimal balanceReturned) {
         String sql = "{call GenerateBill(?, ?, ?, ?)}";
         try (Connection conn = DBConnection.getConnection();
              CallableStatement cs = conn.prepareCall(sql)) {
@@ -31,9 +59,30 @@ public class BillDAOImpl implements BillDAO {
             cs.execute();
 
             int billId = cs.getInt(3);
+            BigDecimal totalAmount = cs.getBigDecimal(4);
 
             if (billId > 0) {
-                return getBillByAppointmentNumber(appointmentNumber);
+                // Record payment details in payments table (NO card numbers stored, only method)
+                String paySql = "INSERT INTO payments (bill_id, appointment_number, payment_method, total_amount, cash_given, balance_returned) VALUES (?, ?, ?, ?, ?, ?)";
+                try (PreparedStatement payPs = conn.prepareStatement(paySql)) {
+                    payPs.setInt(1, billId);
+                    payPs.setString(2, appointmentNumber);
+                    payPs.setString(3, paymentMethod != null ? paymentMethod : "Cash");
+                    payPs.setBigDecimal(4, totalAmount != null ? totalAmount : BigDecimal.ZERO);
+                    payPs.setBigDecimal(5, cashGiven);
+                    payPs.setBigDecimal(6, balanceReturned);
+                    payPs.executeUpdate();
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+
+                Bill bill = getBillByAppointmentNumber(appointmentNumber);
+                if (bill != null) {
+                    bill.setPaymentMethod(paymentMethod != null ? paymentMethod : "Cash");
+                    bill.setCashGiven(cashGiven);
+                    bill.setBalanceReturned(balanceReturned);
+                }
+                return bill;
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -43,11 +92,13 @@ public class BillDAOImpl implements BillDAO {
 
     @Override
     public Bill getBillByAppointmentNumber(String appointmentNumber) {
-        String sql = "SELECT b.*, a.patient_name, a.dentist_name, t.treatment_name, t.cost as treatment_cost " +
+        String sql = "SELECT b.*, a.patient_name, a.dentist_name, t.treatment_name, t.cost as treatment_cost, " +
+                     "p.payment_method, p.cash_given, p.balance_returned " +
                      "FROM bills b " +
                      "JOIN appointments a ON b.appointment_number = a.appointment_number " +
                      "JOIN treatments t ON a.treatment_id = t.id " +
-                     "WHERE b.appointment_number = ?";
+                     "LEFT JOIN payments p ON b.bill_id = p.bill_id " +
+                     "WHERE b.appointment_number = ? ORDER BY p.payment_id DESC LIMIT 1";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             
@@ -65,6 +116,11 @@ public class BillDAOImpl implements BillDAO {
                     bill.setDentistName(rs.getString("dentist_name"));
                     bill.setTreatmentName(rs.getString("treatment_name"));
                     bill.setTreatmentCost(rs.getBigDecimal("treatment_cost"));
+                    
+                    String method = rs.getString("payment_method");
+                    bill.setPaymentMethod(method != null ? method : "Cash");
+                    bill.setCashGiven(rs.getBigDecimal("cash_given"));
+                    bill.setBalanceReturned(rs.getBigDecimal("balance_returned"));
                     return bill;
                 }
             }

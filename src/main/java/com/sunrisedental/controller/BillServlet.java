@@ -15,6 +15,7 @@ import java.math.BigDecimal;
 
 @WebServlet("/bills")
 public class BillServlet extends HttpServlet {
+    private static final long serialVersionUID = 1L;
 
     private final BillDAO billDAO = new BillDAOImpl();
 
@@ -29,6 +30,9 @@ public class BillServlet extends HttpServlet {
         try {
             String appNum = req.getParameter("appointment_number");
             String feeStr = req.getParameter("consultation_fee");
+            String paymentMethod = req.getParameter("payment_method");
+            String cashGivenStr = req.getParameter("cash_given");
+            String balanceStr = req.getParameter("balance_returned");
 
             if (appNum == null || appNum.trim().isEmpty() || feeStr == null || feeStr.trim().isEmpty()) {
                 session.setAttribute("flashError", "Appointment Number and Consultation Fee are required.");
@@ -37,7 +41,21 @@ public class BillServlet extends HttpServlet {
             }
 
             BigDecimal consultationFee = new BigDecimal(feeStr.trim());
-            Bill bill = billDAO.generateBill(appNum.trim(), consultationFee);
+            BigDecimal cashGiven = null;
+            BigDecimal balanceReturned = null;
+
+            if ("Cash".equalsIgnoreCase(paymentMethod)) {
+                if (cashGivenStr != null && !cashGivenStr.trim().isEmpty()) {
+                    cashGiven = new BigDecimal(cashGivenStr.trim());
+                }
+                if (balanceStr != null && !balanceStr.trim().isEmpty()) {
+                    balanceReturned = new BigDecimal(balanceStr.trim());
+                }
+            } else {
+                paymentMethod = "Card";
+            }
+
+            Bill bill = billDAO.generateBill(appNum.trim(), consultationFee, paymentMethod, cashGiven, balanceReturned);
 
             if (bill != null) {
                 req.setAttribute("bill", bill);

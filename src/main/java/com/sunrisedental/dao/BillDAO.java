@@ -7,6 +7,7 @@ import java.util.Map;
 
 public interface BillDAO {
     Bill generateBill(String appointmentNumber, BigDecimal consultationFee);
+    Bill generateBill(String appointmentNumber, BigDecimal consultationFee, String paymentMethod, BigDecimal cashGiven, BigDecimal balanceReturned);
     Bill getBillByAppointmentNumber(String appointmentNumber);
     Map<String, Object> getFinancialSummary();
     List<Map<String, Object>> getTreatmentRevenueReport();

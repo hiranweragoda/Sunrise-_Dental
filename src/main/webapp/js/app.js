@@ -3,6 +3,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     setMinDate();
     initTabNavigation();
+    calculateCashBalance();
 });
 
 // Set minimum date on appointment date pickers to today
@@ -50,6 +51,100 @@ function initTabNavigation() {
     const tabParam = urlParams.get('tab');
     if (tabParam) {
         switchTab(tabParam);
+    }
+}
+
+// Calculate Cash Balance and Update Total Bill
+function calculateCashBalance() {
+    const consultationInput = document.getElementById('consultation_fee');
+    const treatmentCostInput = document.getElementById('treatment_cost_val');
+    const cashGivenInput = document.getElementById('cash_given');
+    
+    const calcTotalSpan = document.getElementById('calc_total_cost');
+    const calcBalanceSpan = document.getElementById('calc_balance');
+    const balanceReturnedHidden = document.getElementById('balance_returned');
+    const cashErrorMsg = document.getElementById('cash_error_msg');
+    const submitBtn = document.getElementById('btn-submit-payment');
+
+    const consultationFee = parseFloat(consultationInput ? consultationInput.value : 0) || 0;
+    const treatmentCost = parseFloat(treatmentCostInput ? treatmentCostInput.value : 0) || 0;
+    const cashGiven = parseFloat(cashGivenInput ? cashGivenInput.value : 0) || 0;
+
+    const totalBill = treatmentCost + consultationFee;
+    if (calcTotalSpan) {
+        calcTotalSpan.textContent = totalBill.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    const isCashChecked = document.getElementById('method-cash') && document.getElementById('method-cash').checked;
+    if (isCashChecked) {
+        const balance = cashGiven - totalBill;
+        if (cashGiven > 0) {
+            if (balance >= 0) {
+                if (calcBalanceSpan) {
+                    calcBalanceSpan.textContent = 'LKR ' + balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    calcBalanceSpan.style.color = '#4ade80';
+                }
+                if (balanceReturnedHidden) balanceReturnedHidden.value = balance.toFixed(2);
+                if (cashErrorMsg) cashErrorMsg.style.display = 'none';
+                if (submitBtn) submitBtn.disabled = false;
+            } else {
+                if (calcBalanceSpan) {
+                    calcBalanceSpan.textContent = 'Insufficient Cash';
+                    calcBalanceSpan.style.color = '#f87171';
+                }
+                if (balanceReturnedHidden) balanceReturnedHidden.value = '0.00';
+                if (cashErrorMsg) {
+                    cashErrorMsg.textContent = '⚠️ Cash given (LKR ' + cashGiven.toFixed(2) + ') is less than total bill (LKR ' + totalBill.toFixed(2) + ')';
+                    cashErrorMsg.style.display = 'block';
+                }
+            }
+        } else {
+            if (calcBalanceSpan) {
+                calcBalanceSpan.textContent = 'LKR 0.00';
+                calcBalanceSpan.style.color = '#4ade80';
+            }
+            if (balanceReturnedHidden) balanceReturnedHidden.value = '0.00';
+            if (cashErrorMsg) cashErrorMsg.style.display = 'none';
+        }
+    }
+}
+
+// Switch between Cash and Card payment forms
+function switchPaymentMethod(method) {
+    const cashSection = document.getElementById('cash-payment-section');
+    const cardSection = document.getElementById('card-payment-section');
+    const cashGivenInput = document.getElementById('cash_given');
+    
+    if (method === 'Cash') {
+        if (cashSection) cashSection.style.display = 'block';
+        if (cardSection) cardSection.style.display = 'none';
+        if (cashGivenInput) cashGivenInput.required = true;
+    } else if (method === 'Card') {
+        if (cashSection) cashSection.style.display = 'none';
+        if (cardSection) cardSection.style.display = 'block';
+        if (cashGivenInput) cashGivenInput.required = false;
+    }
+    calculateCashBalance();
+}
+
+// Format Card Number (adds spaces every 4 digits)
+function formatCardNumber(input) {
+    let value = input.value.replace(/\D/g, '');
+    let formatted = '';
+    for (let i = 0; i < value.length; i++) {
+        if (i > 0 && i % 4 === 0) formatted += ' ';
+        formatted += value[i];
+    }
+    input.value = formatted;
+}
+
+// Format Card Expiry (MM/YY)
+function formatCardExpiry(input) {
+    let value = input.value.replace(/\D/g, '');
+    if (value.length >= 2) {
+        input.value = value.substring(0, 2) + '/' + value.substring(2, 4);
+    } else {
+        input.value = value;
     }
 }
 
