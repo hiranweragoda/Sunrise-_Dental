@@ -201,7 +201,7 @@
 
                             <div class="form-group">
                                 <label for="dentist_name">Dentist Name</label>
-                                <select id="dentist_name" name="dentist_name" required>
+                                <select id="dentist_name" name="dentist_name" required onchange="fetchAvailableTimeSlots()">
                                     <option value="" disabled selected>Select a Dentist</option>
                                     <% if (dentists != null) { for (Dentist d : dentists) { %>
                                         <option value="<%= d.getDentistName() %>"><%= d.getDentistName() %> (<%= d.getSpecialization() %>)</option>
@@ -221,12 +221,18 @@
 
                             <div class="form-group">
                                 <label for="appointment_date">Appointment Date</label>
-                                <input type="date" id="appointment_date" name="appointment_date" required>
+                                <input type="date" id="appointment_date" name="appointment_date" required onchange="fetchAvailableTimeSlots()">
                             </div>
 
                             <div class="form-group">
-                                <label for="appointment_time">Appointment Time</label>
+                                <label for="appointment_time">Appointment Time <span style="font-size: 0.8rem; color: #38bdf8;">(Select slot below or type time)</span></label>
                                 <input type="time" id="appointment_time" name="appointment_time" required>
+                            </div>
+
+                            <div class="form-group full-width" id="time-slots-container" style="background: rgba(15, 23, 42, 0.6); padding: 1.25rem; border-radius: 12px; border: 1px solid var(--card-border); margin-top: 0.5rem;">
+                                <label style="margin-bottom: 0.5rem; display: block; font-weight: 600; color: #38bdf8;">⏰ Interactive Doctor Availability & Live Time Slots</label>
+                                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;" id="slots-prompt-msg">Please select a Dentist and Date above to view live time slot availability.</p>
+                                <div id="slots-grid" style="display: flex; flex-wrap: wrap; gap: 0.6rem;"></div>
                             </div>
                         </div>
 

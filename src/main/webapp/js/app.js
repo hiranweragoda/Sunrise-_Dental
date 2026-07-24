@@ -311,3 +311,88 @@ function resetUserForm() {
 function handleLogout() {
     window.location.href = 'logout';
 }
+
+// Fetch & Render Live Interactive Time Slots
+const STANDARD_CLINIC_SLOTS = [
+    "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
+    "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00"
+];
+
+function fetchAvailableTimeSlots() {
+    const dentistSelect = document.getElementById('dentist_name');
+    const dateInput = document.getElementById('appointment_date');
+    const promptMsg = document.getElementById('slots-prompt-msg');
+    const grid = document.getElementById('slots-grid');
+
+    if (!grid) return;
+
+    const dentist = dentistSelect ? dentistSelect.value : '';
+    const date = dateInput ? dateInput.value : '';
+
+    if (!dentist || !date) {
+        if (promptMsg) promptMsg.textContent = 'Please select a Dentist and Date above to view live time slot availability.';
+        grid.innerHTML = '';
+        return;
+    }
+
+    if (promptMsg) promptMsg.textContent = `Live availability for ${dentist} on ${date}:`;
+    grid.innerHTML = '<span style="color: var(--text-muted); font-size: 0.85rem;">Loading live slots...</span>';
+
+    fetch(`appointments?action=getBookedTimes&dentist_name=${encodeURIComponent(dentist)}&appointment_date=${encodeURIComponent(date)}`)
+        .then(res => res.json())
+        .then(bookedTimes => {
+            grid.innerHTML = '';
+            STANDARD_CLINIC_SLOTS.forEach(slot => {
+                const isBooked = bookedTimes.includes(slot);
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.style.padding = '8px 14px';
+                btn.style.borderRadius = '8px';
+                btn.style.fontSize = '0.85rem';
+                btn.style.fontWeight = '600';
+                btn.style.border = 'none';
+                btn.style.cursor = isBooked ? 'not-allowed' : 'pointer';
+                btn.style.transition = 'all 0.2s ease';
+
+                if (isBooked) {
+                    btn.innerHTML = `🔴 ${slot} <span style="font-size: 0.75rem; opacity: 0.8;">(Booked)</span>`;
+                    btn.style.background = 'rgba(239, 68, 68, 0.2)';
+                    btn.style.color = '#f87171';
+                    btn.style.border = '1px solid rgba(239, 68, 68, 0.4)';
+                    btn.disabled = true;
+                } else {
+                    btn.innerHTML = `🟢 ${slot} <span style="font-size: 0.75rem; opacity: 0.9;">(Available)</span>`;
+                    btn.style.background = 'rgba(34, 197, 94, 0.15)';
+                    btn.style.color = '#4ade80';
+                    btn.style.border = '1px solid rgba(34, 197, 94, 0.4)';
+                    btn.onclick = () => selectTimeSlot(slot, btn);
+                }
+                grid.appendChild(btn);
+            });
+        })
+        .catch(err => {
+            console.error('Error fetching booked slots:', err);
+            grid.innerHTML = '<span style="color: #f87171; font-size: 0.85rem;">Error loading time slots.</span>';
+        });
+}
+
+function selectTimeSlot(slot, clickedBtn) {
+    const timeInput = document.getElementById('appointment_time');
+    if (timeInput) {
+        timeInput.value = slot;
+    }
+    document.querySelectorAll('#slots-grid button').forEach(btn => {
+        if (!btn.disabled) {
+            btn.style.background = 'rgba(34, 197, 94, 0.15)';
+            btn.style.color = '#4ade80';
+            btn.style.borderColor = 'rgba(34, 197, 94, 0.4)';
+            btn.style.transform = 'scale(1)';
+        }
+    });
+    if (clickedBtn) {
+        clickedBtn.style.background = '#22c55e';
+        clickedBtn.style.color = '#000000';
+        clickedBtn.style.transform = 'scale(1.05)';
+    }
+}
+

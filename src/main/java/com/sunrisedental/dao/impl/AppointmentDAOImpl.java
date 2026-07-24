@@ -157,4 +157,24 @@ public class AppointmentDAOImpl implements AppointmentDAO {
             return false;
         }
     }
+
+    @Override
+    public List<String> getBookedTimes(String dentistName, java.sql.Date appointmentDate) {
+        List<String> times = new ArrayList<>();
+        String sql = "SELECT DATE_FORMAT(appointment_time, '%H:%i') as slot FROM appointments " +
+                     "WHERE dentist_name = ? AND appointment_date = ? AND status != 'Cancelled'";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, dentistName);
+            ps.setDate(2, appointmentDate);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    times.add(rs.getString("slot"));
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return times;
+    }
 }

@@ -108,6 +108,15 @@ public class AppointmentServlet extends HttpServlet {
             if (timeVal.length() == 5) timeVal += ":00";
             Time appointmentTime = Time.valueOf(timeVal);
 
+            // Double booking validation check
+            String selectedSlot = timeVal.substring(0, 5);
+            java.util.List<String> bookedTimes = appointmentDAO.getBookedTimes(dentistName.trim(), appointmentDate);
+            if (bookedTimes.contains(selectedSlot)) {
+                session.setAttribute("flashError", "⚠️ " + dentistName.trim() + " is ALREADY BOOKED at " + selectedSlot + " on " + appointmentDateStr.trim() + "! Please select an available time slot.");
+                resp.sendRedirect(req.getContextPath() + "/dashboard?tab=tab-register");
+                return;
+            }
+
             // Generate unique appointment number
             String apptNum = "APPT-" + (1000 + random.nextInt(9000));
 
@@ -140,6 +149,32 @@ public class AppointmentServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String action = req.getParameter("action");
+        if ("getBookedTimes".equalsIgnoreCase(action)) {
+            String dentistName = req.getParameter("dentist_name");
+            String dateStr = req.getParameter("appointment_date");
+            resp.setContentType("application/json");
+            resp.setCharacterEncoding("UTF-8");
+
+            if (dentistName != null && dateStr != null && !dentistName.trim().isEmpty() && !dateStr.trim().isEmpty()) {
+                try {
+                    Date date = Date.valueOf(dateStr.trim());
+                    java.util.List<String> booked = appointmentDAO.getBookedTimes(dentistName.trim(), date);
+                    StringBuilder json = new StringBuilder("[");
+                    for (int i = 0; i < booked.size(); i++) {
+                        json.append("\"").append(booked.get(i)).append("\"");
+                        if (i < booked.size() - 1) json.append(",");
+                    }
+                    json.append("]");
+                    resp.getWriter().write(json.toString());
+                    return;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            resp.getWriter().write("[]");
+            return;
+        }
+
         String appNum = req.getParameter("appointment_number");
         String status = req.getParameter("status");
         HttpSession session = req.getSession(false);
